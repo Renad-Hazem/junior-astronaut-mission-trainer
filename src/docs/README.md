@@ -4,7 +4,9 @@ This directory is the authoritative documentation set for **Junior Astronaut Mis
 
 ## Current product direction
 
-The game is a child-friendly, nonviolent 3D Mars exploration adventure for ages 7–15. Before entering missions, the player selects one of four cosmetic astronaut avatars. Every avatar uses the same controller, speed, collision, interaction radius, resources and outcomes. The player then moves through one shared Mars base, approaches equipment, presses `E`, makes educational decisions, observes world/resource feedback and receives a Mission Brief after every level.
+The game is a child-friendly, nonviolent 3D Mars exploration adventure for ages 7–15. Before entering missions, the player selects one of four cosmetic astronaut avatars. Every avatar uses the same controller, speed, collision, interaction radius, resources and outcomes. During a mission, the 3D Mars world fills the gameplay viewport and the objective, six resources and contextual prompts appear as compact overlays—not permanent dashboard columns. The player scans equipment, collects and carries one visible item, installs it, operates or repairs a system, then makes an authored engineering choice and observes world/resource feedback.
+
+There are exactly four missions in the documented order. A fresh save unlocks only **First Day on Mars**. A valid completion unlocks the next mission; completed missions remain replayable. Merely opening a Mission Brief, triggering Stabilization, changing avatar or bypassing a disabled button must never unlock progress.
 
 The existing Word files in `word/` are archived delivery snapshots. The Markdown files listed below are authoritative for current implementation.
 
@@ -15,12 +17,13 @@ The existing Word files in `word/` are archived delivery snapshots. The Markdown
 | 1 | [`00_START_HERE.md`](00_START_HERE.md) | Current scope, non-negotiable requirements and navigation |
 | 2 | [`01_GAME_DESIGN_DOCUMENT.md`](01_GAME_DESIGN_DOCUMENT.md) | Story, player loop, four missions, resources and educational experience |
 | 3 | [`02_TECHNICAL_CONTRACTS.md`](02_TECHNICAL_CONTRACTS.md) | Frozen APIs, ownership, data flow and proposed avatar contract |
-| 4 | [`09_FOUR_AVATARS_ANIMATION_GAMEPLAY.md`](09_FOUR_AVATARS_ANIMATION_GAMEPLAY.md) | Canonical four-avatar, animation, GLB fallback and spatial-gameplay specification |
-| 5 | Your role file | Incremental tasks, dependencies, acceptance and handoff |
-| 6 | [`06_24_HOUR_RUNBOOK.md`](06_24_HOUR_RUNBOOK.md) | Remaining-work priorities, integration gates and release plan |
-| 7 | [`07_SCIENCE_AND_CONTENT_SOURCES.md`](07_SCIENCE_AND_CONTENT_SOURCES.md) | Verified NASA references and scientific-integrity rules |
-| 8 | [`08_QA_AND_DEMO.md`](08_QA_AND_DEMO.md) | Browser tests, release gates and demo flow |
-| 9 | [`MASTER_HANDBOOK.md`](MASTER_HANDBOOK.md) | Consolidated orientation and links to specialized authoritative documents |
+| 4 | [`10_FULLSCREEN_GAMEPLAY_AND_PROGRESSION.md`](10_FULLSCREEN_GAMEPLAY_AND_PROGRESSION.md) | Latest approved direction for fullscreen play, physical tasks and sequential unlocks |
+| 5 | [`09_FOUR_AVATARS_ANIMATION_GAMEPLAY.md`](09_FOUR_AVATARS_ANIMATION_GAMEPLAY.md) | Four-avatar, animation, GLB fallback and spatial-gameplay details, as amended by document 10 |
+| 6 | Your role file | Incremental tasks, dependencies, acceptance and handoff |
+| 7 | [`06_24_HOUR_RUNBOOK.md`](06_24_HOUR_RUNBOOK.md) | Remaining-work priorities, integration gates and release plan |
+| 8 | [`07_SCIENCE_AND_CONTENT_SOURCES.md`](07_SCIENCE_AND_CONTENT_SOURCES.md) | Verified NASA references and scientific-integrity rules |
+| 9 | [`08_QA_AND_DEMO.md`](08_QA_AND_DEMO.md) | Browser tests, release gates and demo flow |
+| 10 | [`MASTER_HANDBOOK.md`](MASTER_HANDBOOK.md) | Consolidated orientation and links to specialized authoritative documents |
 
 Role files:
 
@@ -42,7 +45,7 @@ No teammate edits another owner's files without an explicit handoff. Use one con
 
 Existing public APIs remain frozen, including `selectLevel`, `chooseOption`, `continueMission`, `returnToLibrary`, `restartLevel`, `MissionEvent.hotspotId` and `MarsSceneProps.onInspect`.
 
-The proposed `AvatarId`, `AvatarDefinition`, canonical avatar metadata and optional `MarsSceneProps.avatarId` are additive and marked **REQUIRES TEAM APPROVAL**. Do not silently implement or depend on them before all three owners agree on the exact definitions and export paths.
+The proposed `AvatarId`, `AvatarDefinition`, canonical avatar metadata and optional `MarsSceneProps.avatarId` are additive and marked **REQUIRES TEAM APPROVAL**. The proposed campaign-progress state, interaction-step schema, task-completion action and new scene task/input signals in document 10 are also **REQUIRES TEAM APPROVAL**. Do not silently implement or depend on any of them before all three owners agree on exact names, validation rules and export paths.
 
 ## Asset and implementation honesty
 
@@ -55,7 +58,7 @@ The proposed `AvatarId`, `AvatarDefinition`, canonical avatar metadata and optio
 ## Before integration
 
 1. Read the Technical Contracts and your role file.
-2. Confirm the avatar contract approval status.
+2. Confirm the avatar, progression and physical-task contract approval status.
 3. Inspect current branches and uncommitted work; never reset or overwrite a teammate.
 4. Implement only in owned paths.
 5. Run the relevant browser QA plus `npm run build` and `npm run lint`.

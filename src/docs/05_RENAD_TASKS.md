@@ -1,7 +1,7 @@
 # RENAD — 3D WORLD, ENGINEERING LEAD & INTEGRATION
 **Branch:** `feature/renad-3d`  
 **Primary paths:** `src/scene/**` and integration docs.  
-**Read first:** `00_START_HERE.md`, `02_TECHNICAL_CONTRACTS.md`, `06_24_HOUR_RUNBOOK.md`.
+**Read first:** `10_FULLSCREEN_GAMEPLAY_AND_PROGRESSION.md`, `00_START_HERE.md`, `02_TECHNICAL_CONTRACTS.md`, `06_24_HOUR_RUNBOOK.md`.
 
 ## Your mission
 Build a beautiful-enough **interactive 3D Mars base**, with one reusable isometric scene. Keep it light and stable in the browser. You are also the integration captain: coordinate merges and verify the product, without overwriting teammates' files.
@@ -36,6 +36,9 @@ Build a beautiful-enough **interactive 3D Mars base**, with one reusable isometr
 | REN-11 | P0 | Implement semantic Idle/Walk/Interact/Celebrate states using real clips when verified and procedural motion otherwise. | `src/scene/**` | REN-10; actual `gltf.animations` audit | Four states are visible, transition without sticking, stop correctly, respect reduced motion and never block gameplay when clips/rigs are absent. | Share semantic-state behavior and clip audit with Mohamed/QA; UI does not control clip names. |
 | REN-12 | P0 | Integrate avatar feedback with movement, modal focus, equipment interaction and mission completion. | `src/scene/**` | Existing controller/camera/proximity; Mohamed focus state; mission completion signal available through agreed integration | Walk tracks actual input, Interact fires once with `E`, Celebrate is friendly/brief, and movement/E are suppressed while decision inputs own focus. | Report any missing completion/focus signal as **REQUIRES TEAM APPROVAL** rather than adding an export silently. |
 | REN-13 | P1 | Add equipment-state animation, subtle dust/energy feedback and better blending after the four-avatar P0 passes. | `src/scene/**` | Full P0 browser regression | VFX remain lightweight, child-friendly and reduced-motion safe; no paid assets, new engine or photorealism dependency. | Deliver performance/asset notes for release review. |
+| REN-14 | P0 | Make the real Canvas support a full-viewport gameplay stage with overlay-safe composition. | `src/scene/**` | Mohamed's viewport container and HUD safe regions | Canvas fills its gameplay host at desktop and 360px without creating a second world; fallback remains available and clearly labeled. | Share resize/performance behavior; do not edit Mohamed's layout files. |
+| REN-15 | P0 after approval | Implement reusable 3D scan and collect/carry/install interactions. | `src/scene/**` | Approved current-step/item signals from Malak | Correct proximity + E produces scan feedback; one visible item can be picked up, carried and installed; wrong target is non-destructive; repeat input is idempotent. | Emit only approved intent/completion signals. New props/callbacks are **REQUIRES TEAM APPROVAL**. |
+| REN-16 | P0 after approval | Implement one reusable operate/repair interaction and visible system success state. | `src/scene/**` | Approved task signal; REN-15 controller/input guards | Child can hold/operate without reflex timer, sees equipment and avatar response, and input stops behind contextual UI. | Publish task-state behavior to Mohamed/Malak; do not mutate store/resources in scene. |
 
 ## Look-and-feel specification
 - Terrain: flat low-poly/smooth orange-red ground (#A85237 or similar) with 10–20 rock primitives, not realistic sand simulation.
@@ -63,7 +66,7 @@ Build a beautiful-enough **interactive 3D Mars base**, with one reusable isometr
 ## Fallbacks when blocked
 - Missing/unusable GLB: use the matching distinct low-poly fallback; all four choices, movement and P0 animation states remain available.
 - No asset downloads: basic meshes are adequate.
-- WebGL issue: Mohamed must show `Mars base preview unavailable` and keep 2D UI decisions playable.
+- WebGL issue: Mohamed must show `Mars base preview unavailable` and an accessible controlled equivalent of inspection and physical tasks; fallback must not silently auto-complete the mission.
 - 3D scene taking too long: keep all six required systems as simple primitives and cut decorative rocks, advanced animation, shadows and effects before cutting movement/interaction.
 - Conflicting `App.tsx`: Mohamed is owner; request import change rather than silently replacing it.
 

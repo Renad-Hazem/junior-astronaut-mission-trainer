@@ -4,6 +4,8 @@
 ## 1. Scientific integrity contract
 This is a **fictional educational simulation**, not a certified Mars habitat simulator. Resource scores (0–100), event magnitudes, exact repair outcomes and Mars base characters are invented game mechanics. Real science facts should be drawn from the official NASA articles below; link to the original URLs in every related Mission Brief. NASA has not been stated to sponsor, validate or endorse the game.
 
+The full-viewport physical tasks in [`10_FULLSCREEN_GAMEPLAY_AND_PROGRESSION.md`](10_FULLSCREEN_GAMEPLAY_AND_PROGRESSION.md)—including scanning, carrying, installing, operating and repairing—are simplified learning interactions, not claims of real astronaut procedures. Keep authored task feedback and fictional resource effects clearly separated from sourced facts.
+
 Do not invent live API endpoints, claim real-time Mars weather data, or copy article text at length. Paraphrase each fact using original, child-friendly language. Add concise `Learn more at NASA` links.
 
 ## 2. Verified source index

@@ -1,7 +1,7 @@
 # MOHAMED — REACT UI/UX, MISSION FLOW & ACCESSIBILITY
 **Branch:** `feature/mohamed-ui`  
 **Primary paths:** `src/App.tsx`, `src/pages/**`, `src/components/ui/**`, `src/styles/**`, `src/index.css`  
-**Read first:** `01_GAME_DESIGN_DOCUMENT.md`, `02_TECHNICAL_CONTRACTS.md`, `06_24_HOUR_RUNBOOK.md`.
+**Read first:** `10_FULLSCREEN_GAMEPLAY_AND_PROGRESSION.md`, `01_GAME_DESIGN_DOCUMENT.md`, `02_TECHNICAL_CONTRACTS.md`, `06_24_HOUR_RUNBOOK.md`.
 
 ## Your mission
 Build a vivid, game-like, complete React experience for children 7–15 that works **with stubbed game/scene APIs** first and then with the teammates' real exports. Make the educational game feel alive and understandable — **not a form, quiz app or generic dashboard**.
@@ -16,13 +16,13 @@ Build a vivid, game-like, complete React experience for children 7–15 that wor
 ### Mission Library
 - Exactly four cards with names: **First Day on Mars**, **Power Crisis**, **Oxygen Emergency**, **Mars Survival Challenge**.
 - Show mission number, skill/difficulty and a short purpose.
-- For hackathon demo, allow selecting any level independently so the judging flow works. Optionally show suggested order.
+- A fresh save enables only First Day on Mars. Levels 2–4 remain readable but show a lock icon, a specific completion requirement and a disabled Start action. Completed levels show Replay; the next unlocked level shows Ready.
 
 ### Mission Gameplay
-- Desktop: 3D Mars base as dominant visual with overlay, compact resource dashboard and decision panel.
-- Mobile: stack title → resource summary → 3D stage → decision card and fixed safe bottom actions; do not force a 3-column tiny layout.
+- Desktop: actual R3F Mars base occupies the full gameplay viewport; objective, alerts, expandable resources, prompts and help are compact overlays. No permanent left/right columns.
+- Mobile: preserve the full-viewport world and collapse HUD content into accessible tabs/drawers; contextual task/decision UI may overlay or modal without leaving movement active behind it.
 - 6 resources (Oxygen, Water, Food, Energy, Radiation Protection, Temperature Control) with icon, label, visible 0–100 value and progress bar. Show caution/critical icons + text (not color alone).
-- Alert card with PIP dialogue, two to three large action buttons, `preview` of likely costs/benefits.
+- Show scan/collect/carry/install/operate/repair instructions contextually. Reveal two to three engineering choices only after the required physical task prerequisites.
 - After choice, animate changed bars, show `consequence`, `Continue` button; do not auto-advance.
 - Include `Inspect system` button to explain the currently highlighted landmark if 3D clicks fail.
 - No countdown timers forcing decision. `Pause/Review` optional but keep controls obvious.
@@ -53,7 +53,7 @@ Mohamed keeps the screens already implemented; these tasks clarify integration a
 | ID | Priority | Description | Owned files | Dependencies | Acceptance criteria | Integration handoff |
 |---|---|---|---|---|---|---|
 | MOH-01 | P0 | Maintain the existing Home screen and design tokens. | `src/App.tsx`, `src/index.css`, `src/styles/**` | Shared palette and screen contract | Home remains responsive and its CTA uses the approved store navigation. | Tell Malak which screen action the CTA consumes; do not edit store code. |
-| MOH-02 | P0 | Maintain the four-card Mission Library and selectable demo flow. | `src/pages/**`, `src/components/ui/**` | Malak's exact four `MissionLevel` records | All four mission names remain selectable and call `selectLevel(id)`. | Report missing level data/IDs to Malak without duplicating it in permanent UI state. |
+| MOH-02 | P0 | Maintain the four-card Mission Library with sequential lock/progress states. | `src/pages/**`, `src/components/ui/**` | Malak's exact four `MissionLevel` records and approved progress selector | Fresh save enables only L1; locked cards are readable but cannot call `selectLevel`; Completed/Replay and newly Ready states are announced accessibly. | Report missing progress data/IDs to Malak without duplicating campaign truth in UI state. |
 | MOH-03 | P0 | Display six resources, current mission objective, movement instructions and event progress. | `src/pages/**`, `src/components/ui/**`, `src/styles/**` | `MissionLevel.objective`, active `MissionEvent`, store resources | Gameplay clearly says WASD/arrows move and `E` interacts; objective and all six accessible bars remain visible/readable. | Provide Renad the available scene viewport and overlay-safe areas; consume Malak's data without resource math. |
 | MOH-04 | P0 | Connect the existing Gameplay screen to the playable scene and gate the relevant decision panel until inspection. | `src/pages/**`, `src/components/ui/**` | Renad's `MarsScene`; active event `hotspotId`; `onInspect` | `onInspect(id)` opens/reveals the decision interface only when `id` matches the active event; inspecting other systems gives descriptive feedback without resolving the event. | Give Renad a tested callback snippet and tell Malak if an authored event lacks `hotspotId`. |
 | MOH-05 | P0 | Maintain Mission Brief with before/after resources, history, explanations and verified science. | `src/pages/**`, `src/components/ui/**`, `src/styles/**` | Malak's `currentReport` and science fact index | Every level ends in a supportive brief with all six resources and real decision history. | Report unresolved science IDs to Malak; never invent source text or URLs. |
@@ -63,10 +63,13 @@ Mohamed keeps the screens already implemented; these tasks clarify integration a
 | MOH-09 | P0 | Add an incremental Choose Your Astronaut panel to the existing Home flow; do not rebuild completed screens or add a new `ScreenId`. | `src/App.tsx`, `src/pages/**`, `src/components/ui/**`, `src/styles/**` | Approved `AvatarId`/metadata from Malak; real/fallback preview guidance from Renad | Exactly four keyboard/touch-friendly cards show preview, name, description and textual Selected state; Confirm is required before library entry. | Share the selected-ID interface with Renad and storage behavior with Malak; report contract blockers before inventing types. |
 | MOH-10 | P0 | Persist and expose the cosmetic selection with Confirm/Change Avatar. | `src/pages/**`, `src/components/ui/**` | MOH-09; approved optional scene prop | Valid selection survives library/levels/replay and safe reload through a scoped `localStorage` key; invalid/blocked storage falls back without crashing; Change Avatar is available from Library. | Pass `avatarId` to `MarsScene` only after approval; provide Renad a deterministic test ID and fallback case. |
 | MOH-11 | P0 | Show selected identity and responsive animation/interaction feedback without duplicating scene state. | `src/pages/**`, `src/components/ui/**`, `src/styles/**` | Renad's scene states; Malak's active objective/event | Gameplay identifies the selected astronaut, keeps controls/objective/prompt accessible, prevents gameplay keys behind decision inputs and shows encouraging completion feedback. | Coordinate focus-lock behavior with Renad; UI never selects animation clips or calculates resources. |
+| MOH-12 | P0 | Replace the gameplay three-column composition with a full-viewport scene and compact responsive overlay HUD. | `src/pages/**`, `src/components/ui/**`, `src/styles/**`, `src/index.css` | Renad's real Canvas; existing completed page work | At 1366×768 and 360px the world fills gameplay; objective/resources/prompts remain readable; no permanent side panel blocks play. | Give Renad overlay-safe regions; preserve Home, Library, Brief and completed styling. |
+| MOH-13 | P0 after approval | Render contextual physical-task UI and accessible equivalent without claiming task completion. | `src/pages/**`, `src/components/ui/**` | Approved Malak task state/action and Renad scene signals | UI describes the current scan/collect/carry/install/operate/repair step; choices stay hidden until prerequisites; fallback requires equivalent user action. | Every new shared signal is **REQUIRES TEAM APPROVAL**; UI emits intent and never mutates task/resource truth. |
+| MOH-14 | P0 | Verify locked-level controls and modal input safety. | `src/pages/**`, `src/components/ui/**`, `src/styles/**` | Guarded `selectLevel`; agreed input-lock integration | Mouse, keyboard and direct DOM activation cannot launch locked missions; WASD/E do not run behind task/decision focus. | Report store bypasses to Malak and missing focus signal to Renad; do not patch their owned files. |
 
 ## Shared integration rules
 - `App.tsx` reads `screen` from Malak's `useGameStore`; **do not** implement a second screen state machine.
-- `GameplayPage` obtains current level, event, resources, `chooseOption` and `continueMission` via agreed store API; do not do resource math inside React components. The current objective and movement controls stay visible while the decision interface is revealed by the matching scene inspection or accessible fallback.
+- `GameplayPage` obtains current level, event, resources and approved task/progress state via the agreed store API; do not do resource math or unlock logic inside React components. Objective and controls stay compactly visible over the full-viewport scene; task/decision interfaces appear only in context.
 - `<MarsScene levelId={...} status={...} highlightedHotspot={...} onInspect={...} />` is owned by Renad. Pass the active `MissionEvent.hotspotId` as `highlightedHotspot`; when `onInspect` returns that same ID, reveal the relevant decision panel. Ask for a mock component if his branch is not merged yet.
 - `MissionBriefPage` uses `currentReport` and fact IDs from Malak's science content. Never invent facts or URLs.
 - For the first few hours, use **temporary typed adapters** under `src/pages/__stubs__/` if the interfaces are pending; delete adapters when real exports arrive. Do not commit parallel incompatible stores.

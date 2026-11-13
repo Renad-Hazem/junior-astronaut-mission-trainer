@@ -1,5 +1,5 @@
 # 24-HOUR HACKATHON RUNBOOK — 3-PERSON TEAM
-**Goal:** deliver a complete four-level browser MVP with one reusable Mars scene, meaningful resource trade-offs, and a Mission Brief for each level.
+**Goal:** deliver a complete four-level browser MVP with one full-viewport reusable Mars scene, physical equipment tasks, sequential unlocks, meaningful resource trade-offs and a Mission Brief for each level.
 
 ## 1. Reality check
 Three people working a single 24-hour window cannot safely guarantee a truly polished, custom 60-minute 3D game. The achievable **P0** is four story chapters with data-driven decisions, a shared 3D base, accessible UI and educational debriefs. The **60–75 minute experience** is a design target requiring authored optional scenes, retry strategies and measured playtesting, not a guaranteed result. A 20–30 minute coherent demo is better than a 60-minute broken experience. Avoid sleep deprivation as a quality strategy: assign breaks and rotate QA.
@@ -8,13 +8,14 @@ Three people working a single 24-hour window cannot safely guarantee a truly pol
 The team has already started implementation. Do **not** restart branches, rebuild completed screens or reset the clock to H0. At the next stand-up, preserve completed work and re-rank only the remaining tasks around this required vertical slice:
 
 ```text
-choose one of four avatars → confirm → select mission → enter shared Mars map
-→ move selected astronaut → approach authored hotspot
-→ press E → matching decision panel → choose once → read consequence → Continue
-→ complete level → Celebrate feedback → Mission Brief
+choose one of four avatars → confirm → enter Library with L1 only unlocked
+→ enter full-viewport shared Mars map → move selected astronaut
+→ approach and scan → collect/carry/install or operate/repair
+→ contextual decision after prerequisites → consequence → Continue
+→ valid completion → Celebrate → Mission Brief → unlock next mission
 ```
 
-Renad adds four avatar renderers/fallbacks, basic Idle/Walk/Interact/Celebrate states, movement, follow camera, bounds/collision and proximity interaction inside `src/scene/**`. Malak preserves the data/store architecture, proposes stable cosmetic IDs/metadata and ensures each event has the correct objective and `hotspotId`. Mohamed incrementally adds the four-card selector to the already-built UI, connects `onInspect`, shows controls/objective/prompt and retains the accessible fallback. No owner rebuilds another owner's work.
+Renad adds four avatar renderers/fallbacks, basic Idle/Walk/Interact/Celebrate states, movement, physical interactions and visible device feedback inside `src/scene/**`. Malak preserves the data/store architecture and owns guarded progress, valid completion and authored task prerequisites. Mohamed replaces only the gameplay composition with the full-viewport stage, compact overlay HUD, locked Library states and contextual accessible task UI. No owner rebuilds another owner's completed work. Any new shared runtime API is **REQUIRES TEAM APPROVAL**.
 
 ## 2. Twelve 2-hour blocks
 | Hours | Renad — 3D/Integration | Malak — Game/Science | Mohamed — UI | Gate |
@@ -35,12 +36,12 @@ Renad adds four avatar renderers/fallbacks, basic Idle/Walk/Interact/Celebrate s
 Short breaks between blocks; swap testers frequently. Avoid leaving the first full integration until H20.
 
 ## 3. Dependency chain
-`Three-owner approval: AvatarId + optional avatarId prop` → `Malak: small metadata contract + event hotspot IDs` → parallel `Malak: store/events`, `Renad: four appearances + one controller + P0 animation`, `Mohamed: existing pages + selector/interaction gating` → `avatar + onInspect integration` → `selection + movement + E + decision vertical slice` → `four-level integration / build / deploy` → `All: manual browser QA`.
+`Three-owner approval: avatar + progress + physical-task additions` → `Malak: smallest contract, guarded progress, task sequence` → parallel `Renad: full-viewport world + one controller + physical mechanics`, `Mohamed: overlay HUD + lock/context UI` → `L1 scan → collect/install or repair → choice vertical slice` → `valid completion unlocks L2` → `reuse across four levels / build / deploy` → `All: manual browser QA`.
 
 **Hard rule:** every owner provides a minimal compileable stub before implementing their full feature, so another teammate is not blocked. If you cannot build all four levels by H12, cut scene complexity, not game loop completeness.
 
 ## 4. Scope cuts (highest to lowest priority)
-**P0 MUST:** exactly four cosmetic avatar choices before mission entry; safe Confirm/Change/persistence; four distinct renderable appearances or fallbacks; one reusable controller; visible Idle/Walk/Interact/Celebrate feedback; working four-level flow; one reusable Mars map; WASD/arrow movement; delta-time normalized motion; isometric follow camera; map bounds/basic collision; proximity highlight + `E` interaction; six resources; data-driven decisions and consequences; explicit Continue; Mission Brief after every level; accessible/WebGL/model fallback; successful production build.
+**P0 MUST:** exactly four cosmetic avatar choices before mission entry; safe Confirm/Change/persistence; four distinct renderable appearances or fallbacks; one reusable controller; visible Idle/Walk/Interact/Celebrate feedback; exactly four sequentially unlocked missions with L1 only on fresh progress; guarded/persisted completion; one full-viewport reusable Mars map; compact overlay HUD; WASD/arrow movement; camera/bounds/collision; proximity + `E`; scan, collect/carry/install and operate/repair mechanics; contextual decisions only after prerequisites; six resources; consequences + Continue; Mission Brief after every level; accessible controlled fallback; successful production build.
 
 **P1 after P0 is verified:** verified GLB polish where assets support it; smoother animation blending; clearer system highlighting; dust-storm feedback; touch controls; improved sound and interaction feedback; 4–5 events per level.
 
@@ -84,11 +85,11 @@ git push -u origin <YOUR_BRANCH>
 - Last 4 hours: critical fixes only. Never replace major architecture near deadline.
 
 ## 7. Definition of Done at three checkpoints
-**H8 / next available gate:** select Avatar 3, confirm, start Power Crisis, move with keyboard, approach Solar, press `E`, choose one meaningful option once, see resource/world consequence, then Continue.
+**H8 / next available gate:** fresh progress shows L1 unlocked and L2–L4 locked; select Avatar 3, enter L1's full-viewport world, move, scan the target, collect/carry/install one item or operate/repair, then reveal one meaningful option and apply one consequence.
 
-**H12 / core-content gate:** every avatar renders/moves with equal gameplay parameters and P0 animation fallback; four levels can be entered/completed on the same map; camera/bounds work; each event maps correctly; each brief/source fact resolves.
+**H12 / core-content gate:** every avatar renders/moves with equal gameplay parameters and P0 animation fallback; valid L1 completion unlocks L2 exactly once; the reusable physical-task loop works across all four authored missions on the same map; each brief/source fact resolves.
 
-**H20 / release-candidate gate:** full four-level browser playthrough has no crash, movement and diagonal speed are usable, repeated `E`/choice input does not duplicate effects, fallback remains responsive, and `npm run build`/`npm run lint` pass or pre-existing issues are explicitly triaged.
+**H20 / release-candidate gate:** fresh-save-to-campaign-complete browser playthrough unlocks L1→L4 in order with no bypass/crash; repeated task/E/choice input does not duplicate steps, effects or unlocks; fullscreen/360px and fallback paths remain usable; build/lint pass or pre-existing issues are triaged.
 **H24:** shareable deployment or reliable locally runnable demo, backup video, known limitations visible.
 
 ## 8. Deployment

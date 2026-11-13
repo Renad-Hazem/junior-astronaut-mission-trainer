@@ -12,7 +12,7 @@
 
 **Deadline:** Existing 24-hour hackathon clock; do not restart completed work
 
-> **Precedence:** This specification supersedes prior passages that describe a single fixed astronaut appearance or treat all character animation as optional P2. Preserve every existing level name, the six-resource model, Mission Brief, player movement and hotspot contracts, and all teammate-owned code.
+> **Precedence:** This specification supersedes prior passages that describe a single fixed astronaut appearance or treat all character animation as optional P2. [`10_FULLSCREEN_GAMEPLAY_AND_PROGRESSION.md`](10_FULLSCREEN_GAMEPLAY_AND_PROGRESSION.md) is newer and supersedes this file wherever this file implies free access to every mission, a permanent dashboard/decision panel or inspection followed immediately by a choice. Preserve every existing level name, the six-resource model, Mission Brief, player movement and hotspot contracts, and all teammate-owned code.
 
 ## 1. Product vision and gameplay pillar
 
@@ -22,7 +22,9 @@ The experience should feel **responsive, vivid, safe, and fair**. “Realistic�
 
 **Canonical game loop:**
 
-`Home → Choose one of 4 avatars → Confirm → Mission Library → Level → Move / Explore → Approach target device → Interact (E / touch equivalent / accessible fallback) → Observe problem → Make decision → See resource + world changes → Continue → More objectives → Mission Brief → Next level / Replay / Change avatar.`
+`Home → Choose one of 4 avatars → Confirm → Mission Library → unlocked level → full-viewport Mars world → Move / Explore → Scan → Collect / Carry / Install or Operate / Repair → contextual decision → resource + world changes → Mission Brief → unlock next level / Replay / Change avatar.`
+
+The Library shows exactly four missions, but only Level 1 is unlocked on a fresh save. Valid completion unlocks the immediate next level. Avatar choice never changes progress. The mission world is full-viewport with a compact overlay HUD; fixed side columns are not gameplay.
 
 The same **world map, controller, camera, equipment hotspots, and decision engine** serve all four levels. This reuse is essential for the schedule.
 
@@ -137,6 +139,8 @@ export interface AvatarDefinition {
 // Renad-owned MarsSceneProps (optional; preserves existing props)
 avatarId?: AvatarId; // default avatar-01 if omitted
 ```
+
+Document 10 additionally proposes campaign-completion state, physical interaction steps, a task-completion action and optional scene task/input signals. Every one of those additions is **REQUIRES TEAM APPROVAL**. Reuse an already approved lean contract if one exists; do not create parallel stores, duplicate controllers or silently expand `MarsSceneProps`.
 
 Mohamed holds local avatar-selection state and passes the chosen ID into MarsScene **after** this optional prop is approved. Malak owns canonical metadata/IDs and mission logic, not 3D. Renad owns model rendering, animation state and controls; the scene **must not calculate resources**. Existing `onInspect(hotspotId)`, `chooseOption(optionId)`, `continueMission()`, `MissionEvent.hotspotId`, screens, and resource keys remain unchanged.
 

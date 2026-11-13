@@ -10,6 +10,8 @@ Before mission entry, the player chooses one of four visually distinct astronaut
 
 **Core promise:** A mission should feel like solving an adventure in a living space station, **not** completing a science multiple-choice test.
 
+**Latest approved presentation and progression:** The playable Mars world occupies the full gameplay viewport with a compact overlay HUD. Exactly four missions appear in the Library, but a fresh save unlocks only Level 1. Each valid completion unlocks the next mission; completed missions remain replayable. See [`10_FULLSCREEN_GAMEPLAY_AND_PROGRESSION.md`](10_FULLSCREEN_GAMEPLAY_AND_PROGRESSION.md).
+
 ## 2. Audience and age design
 - **Ages 7–10:** short sentences, icon + text for every resource, read-aloud-friendly instructions, no time pressure, 2–3 decisions per event, guided hints, forgiving recovery.
 - **Ages 11–15:** optional `Why?` scientific expansion panels, nuanced trade-offs, optional advanced objectives and a more detailed Mission Brief.
@@ -40,12 +42,12 @@ The 3D scene is playable exploration space, not a decorative background for a Re
 5. **Explore relevant area:** Walk through the readable isometric layout toward the objective.
 6. **Approach a system:** Proximity detection highlights the relevant base system and shows an interaction prompt.
 7. **Press `E` to interact:** The scene reports the system through the existing `onInspect(hotspotId)` callback. An accessible Inspect System UI control provides the same path when 3D/keyboard interaction is unavailable.
-8. **Inspect the problem:** PIP explains the equipment state and why it matters.
-9. **Choose a response:** Pick one of 2–3 responses with visible *expected trade-off hints*.
-10. **Observe consequences:** Resource bars and equipment state update once; the astronaut gives readable interaction feedback.
+8. **Perform the physical task:** Scan/inspect the correct device, collect and visibly carry a simple item, install it, or operate/repair the system. Every level contains an inspection and at least one active task.
+9. **Choose a response when prerequisites are complete:** Open a small contextual overlay with 2–3 engineering/resource responses and visible trade-off hints; never keep a permanent quiz panel beside the world.
+10. **Observe consequences:** Resource HUD and equipment state update once; the astronaut gives readable interaction feedback.
 11. **Continue:** Read the explanation, then explicitly continue to the next objective; never auto-skip feedback.
-12. **Finish and celebrate:** Complete the authored objectives and show a short friendly celebration before the brief.
-13. **Read Mission Brief:** Review the decision trail, resource outcomes, suggestions and NASA-linked science.
+12. **Finish, celebrate and unlock:** Valid completion records the level once and unlocks only its immediate successor. Stabilization/retry and merely opening the Brief do not count.
+13. **Read Mission Brief:** Review the action/decision trail, resource outcomes, suggestions and NASA-linked science; replay completed levels or start the newly unlocked next level.
 
 Movement is smooth and frame-rate independent through delta time. The isometric camera follows Nova without making the player steer the camera. Basic map boundaries/collision keep the astronaut on the playable ground and outside landmark geometry. There is no randomized instant death or combat. Choices matter but should not make the experience irreversibly unwinnable. If a critical resource is exhausted, invoke a **Stabilization Protocol** and allow a checkpoint retry with an explanation.
 
@@ -72,6 +74,8 @@ Use embedded GLB clips only after inspecting their real names and content. Proce
 Suggested state colors: Healthy >=60; Caution 30–59; Critical <30. Use words/icons alongside colors. Limit all values to 0–100 after every decision. Event updates happen on user action, not every real-world second.
 
 ## 6. Levels, story beats and lesson outcomes
+
+The Library always shows these four missions in order. Fresh progress exposes only Level 1 as playable; Levels 2–4 show their unlock condition and reject start attempts. Physical interaction sequences below take precedence over older decision-only wording: each mission must include movement, scan/inspect and an active collect/install or operate/repair task before or between contextual choices.
 
 ### LEVEL 1 — FIRST DAY ON MARS (Beginner)
 **Story:** Nova arrives at Aster Base. PIP gives a guided tour. Four systems must be inspected before the first Martian night. Radiation and thermal safety are displayed but initially passive.

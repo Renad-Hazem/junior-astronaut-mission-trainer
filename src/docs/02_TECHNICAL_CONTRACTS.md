@@ -1,6 +1,8 @@
 # TECHNICAL ARCHITECTURE & TEAM INTERFACE CONTRACTS
 **This is the shared implementation contract. All three teammates and all AI coding agents must follow it.**
 
+> **Latest approved direction:** [`10_FULLSCREEN_GAMEPLAY_AND_PROGRESSION.md`](10_FULLSCREEN_GAMEPLAY_AND_PROGRESSION.md) supersedes free selection of all missions and any permanent three-column gameplay composition. Existing APIs remain frozen. Campaign progression, multi-stage physical tasks and any new scene signals are additive proposals marked **REQUIRES TEAM APPROVAL** until all owners approve exact shapes.
+
 ## 1. Observed repository foundation
 Repo: `Renad-Hazem/junior-astronaut-mission-trainer`, branch `main` at audit time (13 Nov 2026). Existing: Vite, React 19, TypeScript, Three.js, `@react-three/fiber`, `@react-three/drei`, Zustand and ESLint. `src/App.tsx` is still the stock Vite starter. No existing scene, game engine or routing code was observed. The package has scripts `npm run dev`, `npm run build`, `npm run lint`, and `npm run preview`.
 
@@ -152,7 +154,7 @@ export interface GameStore {
 export const useGameStore: UseBoundStore<StoreApi<GameStore>>;
 ```
 
-**Required behavior:** `selectLevel(id)` sets `screen='gameplay'`, resets level resources and event index, loads its data. `chooseOption(id)` is idempotent while `isAwaitingContinue` and applies the current event's opening effect plus chosen option exactly once, clamps all resources and stores a `DecisionRecord`. `continueMission()` advances to the next event, OR builds a Mission Brief and sets `screen='brief'` after final decision. `returnToLibrary()` navigates to library. `restartLevel()` resets that level. Do not auto-advance while the player reads consequences.
+**Required behavior:** `selectLevel(id)` first validates campaign access; locked IDs are rejected without changing screen, active mission or resources. For an unlocked ID it sets `screen='gameplay'`, resets level resources/event/task state and loads its data. `chooseOption(id)` is idempotent while `isAwaitingContinue` and applies the current event's opening effect plus chosen option exactly once, clamps all resources and stores a `DecisionRecord`. `continueMission()` advances only after approved task/decision prerequisites, or builds a Mission Brief after the final valid objective. A valid completion records the level exactly once and unlocks only its immediate successor. `returnToLibrary()` navigates to library. `restartLevel()` resets that level without revoking earned progress. Do not auto-advance while the player reads consequences. The new progress/task state needed for these rules is proposed below and **REQUIRES TEAM APPROVAL**.
 
 **Simplify if necessary:** exact TS import for `UseBoundStore` / `StoreApi` comes from Zustand. Do not make runtime logic depend on TS-only type imports.
 
@@ -276,10 +278,24 @@ Avatar selection persists across levels and replay until the player chooses Chan
 
 Do not implement this proposal until team approval is recorded. After approval, publish the types/metadata in one small Malak-owned contract commit before UI/scene code depends on them.
 
+### 7.4 Campaign progression and physical-task proposal — REQUIRES TEAM APPROVAL
+
+The frozen contract can inspect a hotspot and apply a resource choice, but it cannot represent a validated multi-step scan/collect/carry/install/operate/repair sequence or persisted sequential unlocks. The illustrative `InteractionKind`, `InteractionStep`, completion records/actions and optional `MarsSceneProps` task/input signals in document 10 are therefore **REQUIRES TEAM APPROVAL**. The team must choose one canonical shape before implementation.
+
+Contract invariants regardless of final naming:
+
+- ordered canonical completion data derives access to exactly four levels; fresh state unlocks only Level 1;
+- both Library UI and `selectLevel` enforce locking; corrupt or unavailable storage never grants extra access;
+- task completion is current-step validated and idempotent; wrong/stale objects and repeated `E` cannot advance;
+- one owner mutates progress/resources; UI and scene only emit approved intent/signals;
+- avatar selection remains separate cosmetic state;
+- input-lock coordination is required before adding a prop, because gameplay keys must stop behind modal/form focus;
+- existing `hotspotId`, `onInspect`, choice, continue, replay and fallback paths remain compatible.
+
 ## 8. Mohamed screen composition contract
 - `HomePage`: title, short game premise, CTA to library.
-- `MissionLibraryPage`: 4 level cards, order and difficulty, CTA triggers `selectLevel`.
-- `GameplayPage`: left/center 3D scene (Renad component), resource panel, event card with decision options, PIP consequences, explicit `Continue` button.
+- `MissionLibraryPage`: exactly 4 ordered level cards with Locked/Ready/Completed-Replay state; only an unlocked CTA calls guarded `selectLevel`.
+- `GameplayPage`: full-viewport 3D scene (Renad component) or accessible fallback, with compact overlay objective/resources/prompts; contextual task or decision UI appears only when relevant, followed by PIP consequences and explicit `Continue`.
 - `MissionBriefPage`: initial/final bars, decision timeline, at least 1 fact from `scienceFacts`, constructive suggestion, `Next Level` or `Replay`.
 - `App.tsx` chooses page from `useGameStore(s => s.screen)`; avoid competing page state.
 

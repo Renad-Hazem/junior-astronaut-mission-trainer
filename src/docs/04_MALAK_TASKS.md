@@ -1,7 +1,7 @@
 # MALAK — GAME LOGIC, FOUR LEVELS & SCIENCE CONTENT
 **Branch:** `feature/malak-game-engine`  
 **Primary paths:** `src/game/**`, `src/data/**`, `src/science/**`  
-**Read first:** `01_GAME_DESIGN_DOCUMENT.md`, `02_TECHNICAL_CONTRACTS.md`, `07_SCIENCE_AND_CONTENT_SOURCES.md`.
+**Read first:** `10_FULLSCREEN_GAMEPLAY_AND_PROGRESSION.md`, `01_GAME_DESIGN_DOCUMENT.md`, `02_TECHNICAL_CONTRACTS.md`, `07_SCIENCE_AND_CONTENT_SOURCES.md`.
 
 ## Your mission
 Create **one deterministic, reusable, well-typed decision engine** that powers all four Mars missions. This is the source of truth for six resources, decisions, scientific explanations, event sequencing and Mission Brief results. The UI and 3D scene must work without inventing their own game logic.
@@ -14,6 +14,8 @@ Create **one deterministic, reusable, well-typed decision engine** that powers a
 - Ensure `Mission Brief` includes pre-level resources, final resources, choice history, source fact IDs and learning suggestion.
 - Science copy uses official source URLs, never fabricated endpoints/real-time NASA claims.
 - If critical resources fall to 0, offer compassionate `Crew Stabilization` debrief with replay route; no violent animation or punitive game over.
+- Own validated sequential campaign progress: only L1 on fresh state; each valid completion unlocks one successor; locked `selectLevel` calls fail safely; completed levels remain replayable.
+- Author reusable physical task prerequisites so every mission includes movement, inspection and at least one scan/collect/carry/install/operate/repair action before or between choices.
 
 ## Priority task board
 
@@ -29,9 +31,12 @@ Create **one deterministic, reusable, well-typed decision engine** that powers a
 | MAL-08 | P1 | Tune readability, resource balance and optional event variety from playtests. | `src/data/**`, `src/science/**`, `src/game/**` | Stable P0 integration and recorded playtests | Changes preserve deterministic outcomes, verified facts and completable four-level flow. | Send changed fixtures/deltas to both teammates before final regression. |
 | MAL-09 | P0 after approval | Publish four stable cosmetic Avatar IDs and display metadata without model claims. | `src/game/types.ts`, proposed `src/data/avatars.ts` | Three-owner approval of the additive contract; Renad asset audit for any optional URL | Exactly four typed IDs/records exist; IDs do not change gameplay; `modelUrl` is absent unless a real licensed file/path is verified. | Release a small contract/data commit before Mohamed or Renad imports it; announce exact export paths. |
 | MAL-10 | P0 | Verify all four spatial mission sequences remain avatar-neutral and map to the correct equipment. | `src/data/**`, `src/game/**`, `src/science/**` | Existing mission engine; approved IDs are optional metadata only | Every level has physical objectives, decisions, consequences and Mission Brief; selected avatar never changes resources, scoring, collision, speed or outcomes. | Give Mohamed objective/avatar-neutral fixtures and Renad the final hotspot sequence; do not implement rendering/animation. |
+| MAL-11 | P0 after approval | Implement canonical sequential progress and guarded mission selection with versioned validation. | `src/game/**` | Three-owner approval of progress shape | Fresh/corrupt storage unlocks only L1; valid completion unlocks one successor exactly once; replay preserves progress; Stabilization/Brief navigation cannot unlock. | Publish selectors/actions to Mohamed; provide Renad no storage responsibility. New shared state/actions are **REQUIRES TEAM APPROVAL**. |
+| MAL-12 | P0 after approval | Define and validate reusable interaction-step data for scan, collect, install and operate. | `src/game/types.ts`, `src/data/**`, `src/game/**` | Approved lean task contract; Renad interactable IDs | Current-step completion is idempotent; wrong/stale item/hotspot cannot advance; choices unlock only after prerequisites; one carried item is sufficient. | Freeze exact exports before consumers import them. All additions are **REQUIRES TEAM APPROVAL**. |
+| MAL-13 | P0 | Provide a valid-completion gate independent of `screen='brief'`/`currentReport`. | `src/game/**` | MAL-11/12; report transition | Only completion of all required current mission steps and decisions records campaign completion; final L4 records campaign complete. | Give QA deterministic fresh/complete/stabilized/corrupt fixtures. |
 
 ### Objective and hotspot authoring rule
-Malak does not implement movement, collision, cameras or rendering. Each active `MissionEvent.hotspotId` tells the scene which system the astronaut must visit; `headline` and `prompt` tell the UI what objective/problem to show. The same IDs must be reused across all four missions. An event cannot apply effects merely because the astronaut approached a system: effects occur only when the player chooses an option through `chooseOption(optionId)`.
+Malak does not implement movement, collision, cameras or rendering. Each active `MissionEvent.hotspotId` tells the scene which system the astronaut must visit; approved interaction steps identify the current physical action and optional simple item. The same IDs must be reused across all four missions. Approach alone cannot apply effects or complete a step. Physical completion must be validated against the current step, and resource effects occur only through the approved choice path.
 
 Avatar metadata is cosmetic configuration, not mission state. Do not branch decisions, resource deltas, science, report status or scoring by `AvatarId`. Malak must not invent GLB paths, clip names or character capabilities.
 
