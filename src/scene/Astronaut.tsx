@@ -1,0 +1,108 @@
+import { useRef, type RefObject } from 'react';
+import { useFrame } from '@react-three/fiber';
+import type { Group } from 'three';
+import { dampFactor } from './sceneMath';
+
+export interface AstronautMotion {
+  moving: boolean;
+}
+
+interface AstronautProps {
+  motionRef: RefObject<AstronautMotion>;
+  reducedMotion: boolean;
+}
+
+const SUIT = '#f3f1ec';
+const SUIT_SHADE = '#d9d6cf';
+const ACCENT = '#e07b2f';
+const VISOR = '#f2a33a';
+
+/**
+ * Primitive-built, readable astronaut. Local +Z is the facing direction
+ * (visor and chest patch), so the parent group's Y rotation shows heading.
+ */
+export default function Astronaut({ motionRef, reducedMotion }: AstronautProps) {
+  const bodyRef = useRef<Group>(null);
+  const leftLegRef = useRef<Group>(null);
+  const rightLegRef = useRef<Group>(null);
+  const leftArmRef = useRef<Group>(null);
+  const rightArmRef = useRef<Group>(null);
+  const phaseRef = useRef(0);
+  const swingRef = useRef(0);
+
+  useFrame((_, delta) => {
+    const moving = motionRef.current.moving && !reducedMotion;
+    const target = moving ? 1 : 0;
+    swingRef.current += (target - swingRef.current) * dampFactor(10, delta);
+    if (moving) phaseRef.current += Math.min(delta, 0.1) * 10;
+    const swing = Math.sin(phaseRef.current) * 0.6 * swingRef.current;
+    if (leftLegRef.current) leftLegRef.current.rotation.x = swing;
+    if (rightLegRef.current) rightLegRef.current.rotation.x = -swing;
+    if (leftArmRef.current) leftArmRef.current.rotation.x = -swing * 0.8;
+    if (rightArmRef.current) rightArmRef.current.rotation.x = swing * 0.8;
+    if (bodyRef.current) {
+      bodyRef.current.position.y = Math.abs(Math.sin(phaseRef.current)) * 0.06 * swingRef.current;
+    }
+  });
+
+  return (
+    <group>
+      {/* Soft contact shadow (no shadow maps needed) */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
+        <circleGeometry args={[0.5, 20]} />
+        <meshBasicMaterial color="#000000" transparent opacity={0.25} depthWrite={false} />
+      </mesh>
+
+      <group ref={bodyRef}>
+        {/* Legs pivot at the hip */}
+        {([[-0.15, leftLegRef], [0.15, rightLegRef]] as const).map(([x, ref]) => (
+          <group key={x} ref={ref} position={[x, 0.62, 0]}>
+            <mesh position={[0, -0.3, 0]}>
+              <capsuleGeometry args={[0.11, 0.38, 4, 8]} />
+              <meshStandardMaterial color={SUIT_SHADE} flatShading />
+            </mesh>
+            <mesh position={[0, -0.56, 0.04]}>
+              <boxGeometry args={[0.2, 0.1, 0.3]} />
+              <meshStandardMaterial color="#5c5f68" flatShading />
+            </mesh>
+          </group>
+        ))}
+
+        {/* Torso */}
+        <mesh position={[0, 0.95, 0]}>
+          <capsuleGeometry args={[0.3, 0.38, 4, 10]} />
+          <meshStandardMaterial color={SUIT} flatShading />
+        </mesh>
+        <mesh position={[0, 0.98, 0.28]}>
+          <boxGeometry args={[0.26, 0.18, 0.06]} />
+          <meshStandardMaterial color={ACCENT} flatShading />
+        </mesh>
+        {/* Backpack (life support) on local -Z */}
+        <mesh position={[0, 1.0, -0.32]}>
+          <boxGeometry args={[0.46, 0.55, 0.22]} />
+          <meshStandardMaterial color={SUIT_SHADE} flatShading />
+        </mesh>
+
+        {/* Arms pivot at the shoulder */}
+        {([[-0.38, leftArmRef], [0.38, rightArmRef]] as const).map(([x, ref]) => (
+          <group key={x} ref={ref} position={[x, 1.18, 0]}>
+            <mesh position={[0, -0.25, 0]}>
+              <capsuleGeometry args={[0.09, 0.34, 4, 8]} />
+              <meshStandardMaterial color={SUIT} flatShading />
+            </mesh>
+          </group>
+        ))}
+
+        {/* Helmet and visor (facing +Z) */}
+        <mesh position={[0, 1.55, 0]}>
+          <sphereGeometry args={[0.3, 14, 10]} />
+          <meshStandardMaterial color={SUIT} flatShading />
+        </mesh>
+        <mesh position={[0, 1.56, 0.1]} scale={[1, 0.8, 1]}>
+          <sphereGeometry args={[0.24, 14, 10, 0, Math.PI, 0, Math.PI]} />
+          <meshStandardMaterial color={VISOR} metalness={0.6} roughness={0.25} emissive={VISOR} emissiveIntensity={0.15} />
+        </mesh>
+      </group>
+    </group>
+  );
+}
