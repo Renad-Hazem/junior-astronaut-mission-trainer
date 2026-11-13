@@ -235,6 +235,9 @@ export interface GameStore {
   lastDecision: DecisionRecord | null
   isAwaitingContinue: boolean
   currentReport: MissionReport | null
+  // TEMPORARY UI FIXTURE: Malak remains the source-of-truth owner for
+  // persistent campaign progression and the final approved store contract.
+  completedLevelIds: LevelId[]
   selectLevel: (id: LevelId) => void
   chooseOption: (optionId: string) => void
   continueMission: () => void
@@ -250,6 +253,13 @@ const emit = (next: Partial<GameStore>) => {
   listeners.forEach((listener) => listener())
 }
 const levelById = (id: LevelId | null) => missionLevels.find((level) => level.id === id)
+export const isLevelUnlocked = (id: LevelId, completedLevelIds: readonly LevelId[]) => {
+  const level = levelById(id)
+  if (!level) return false
+  if (level.order === 1 || completedLevelIds.includes(id)) return true
+  const previousLevel = missionLevels.find((item) => item.order === level.order - 1)
+  return previousLevel ? completedLevelIds.includes(previousLevel.id) : false
+}
 const applyEffects = (base: Resources, ...deltas: ResourceDelta[]): Resources => {
   const keys = Object.keys(base) as ResourceKey[]
   return keys.reduce<Resources>((next, key) => {
@@ -261,7 +271,7 @@ const applyEffects = (base: Resources, ...deltas: ResourceDelta[]): Resources =>
 
 const selectLevel = (id: LevelId) => {
   const level = levelById(id)
-  if (!level) return
+  if (!level || !isLevelUnlocked(id, state.completedLevelIds)) return
   emit({ screen: 'gameplay', activeLevelId: id, eventIndex: 0, resources: { ...level.initialResources }, initialResources: { ...level.initialResources }, decisionHistory: [], lastDecision: null, isAwaitingContinue: false, currentReport: null })
 }
 
@@ -291,17 +301,21 @@ const continueMission = () => {
     return
   }
   const scienceFactIds = [...new Set(state.decisionHistory.flatMap((decision) => decision.scienceFactIds))]
+  const status: MissionReport['status'] = Object.values(state.resources).some((value) => value < 30) ? 'stabilized' : 'reviewed'
   const report: MissionReport = {
     levelId: level.id,
     title: level.title,
     started: { ...state.initialResources },
     ended: { ...state.resources },
     decisions: [...state.decisionHistory],
-    status: Object.values(state.resources).some((value) => value < 30) ? 'stabilized' : 'reviewed',
+    status,
     scienceFactIds,
     suggestion: 'Try another route and notice how protecting one system can change the resources available to another.',
   }
-  emit({ screen: 'brief', currentReport: report, isAwaitingContinue: false })
+  const completedLevelIds = status === 'reviewed' && !state.completedLevelIds.includes(level.id)
+    ? [...state.completedLevelIds, level.id]
+    : state.completedLevelIds
+  emit({ screen: 'brief', currentReport: report, isAwaitingContinue: false, completedLevelIds })
 }
 
 const returnToLibrary = () => emit({ screen: 'library', activeLevelId: null, lastDecision: null, isAwaitingContinue: false })
@@ -309,7 +323,7 @@ const restartLevel = () => { if (state.activeLevelId) selectLevel(state.activeLe
 
 state = {
   screen: 'home', activeLevelId: null, eventIndex: 0, resources: emptyResources, initialResources: emptyResources,
-  decisionHistory: [], lastDecision: null, isAwaitingContinue: false, currentReport: null,
+  decisionHistory: [], lastDecision: null, isAwaitingContinue: false, currentReport: null, completedLevelIds: [],
   selectLevel, chooseOption, continueMission, returnToLibrary, restartLevel,
 }
 

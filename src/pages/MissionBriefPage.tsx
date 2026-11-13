@@ -1,6 +1,6 @@
 import { ResourceBar } from '../components/ui/ResourceBar'
 import { ReportTimeline } from '../components/ui/ReportTimeline'
-import { missionLevels, resourceMeta, scienceFacts, useGameStore, type ResourceKey } from './__stubs__/gameAdapter'
+import { isLevelUnlocked, missionLevels, resourceMeta, scienceFacts, useGameStore, type ResourceKey } from './__stubs__/gameAdapter'
 
 const resourceOrder = Object.keys(resourceMeta) as ResourceKey[]
 
@@ -9,9 +9,11 @@ export function MissionBriefPage() {
   const selectLevel = useGameStore((state) => state.selectLevel)
   const restartLevel = useGameStore((state) => state.restartLevel)
   const returnToLibrary = useGameStore((state) => state.returnToLibrary)
+  const completedLevelIds = useGameStore((state) => state.completedLevelIds)
   if (!report) return <div className="page error-panel"><h1>Mission Brief is preparing…</h1><button className="primary-button" onClick={returnToLibrary}>Mission Library</button></div>
   const currentIndex = missionLevels.findIndex((level) => level.id === report.levelId)
   const nextLevel = missionLevels[currentIndex + 1]
+  const nextLevelUnlocked = nextLevel ? isLevelUnlocked(nextLevel.id, completedLevelIds) : false
   const facts = report.scienceFactIds.map((id) => scienceFacts[id]).filter(Boolean).slice(0, 3)
 
   return (
@@ -21,7 +23,7 @@ export function MissionBriefPage() {
         <span className="eyebrow">TRANSMISSION RECEIVED · ASTER BASE</span>
         <h1>MISSION BRIEF</h1>
         <p>{report.title}</p>
-        <div className="completion-badge"><span aria-hidden="true">✓</span><div><strong>{report.status === 'reviewed' ? 'Mission Reviewed' : 'Crew Stabilized'}</strong><small>You completed the challenge and collected new science for the team.</small></div></div>
+        <div className="completion-badge"><span aria-hidden="true">✓</span><div><strong>{report.status === 'reviewed' ? 'Mission Reviewed' : 'Crew Stabilized'}</strong><small>{report.status === 'reviewed' ? (nextLevel ? `Mission 0${nextLevel.order} is now ready to play.` : 'The four-mission training campaign is complete.') : 'Review this mission again to unlock the next challenge.'}</small></div></div>
       </header>
 
       <div className="brief-content">
@@ -45,7 +47,7 @@ export function MissionBriefPage() {
         <nav className="brief-actions" aria-label="Mission Brief actions">
           <button type="button" className="secondary-button" onClick={returnToLibrary}>← Mission Library</button>
           <button type="button" className="secondary-button" onClick={restartLevel}>↻ Replay Mission</button>
-          {nextLevel && <button type="button" className="primary-button" onClick={() => selectLevel(nextLevel.id)}>Next Mission: {nextLevel.title} →</button>}
+          {nextLevel && nextLevelUnlocked && <button type="button" className="primary-button" onClick={() => selectLevel(nextLevel.id)}>Next Mission: {nextLevel.title} →</button>}
         </nav>
       </div>
       <footer className="site-footer">Science sources: NASA · This educational simulation is not endorsed by NASA.</footer>

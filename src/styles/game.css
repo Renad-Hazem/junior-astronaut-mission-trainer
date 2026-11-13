@@ -231,3 +231,630 @@
   .resource-dashboard__list { grid-template-columns: 1fr; }.mars-scene { min-height: 330px; }.scene-hotspot { transform: scale(.7); }.scene-hotspot--habitat { left: 29%; }.scene-hotspot--solar { left: 0; }.scene-hotspot--greenhouse { right: 0; }.inspection-control { align-items: stretch; flex-direction: column; }.inspection-control button { width: 100%; }.alert-card { grid-template-columns: 42px 1fr; }.pip-avatar { width: 42px; height: 42px; }.gameplay-page { padding-bottom: 1rem; }
   .brief-hero { padding-inline: 0; }.completion-badge { align-items: flex-start; }.comparison-table { overflow-x: auto; }.comparison-head, .comparison-row { min-width: 570px; }.report-timeline li { grid-template-columns: 42px 1fr; padding: 1rem .8rem; }.timeline-number { width: 42px; height: 42px; }.report-timeline::before { left: 29px; }.delta-pill { line-height: 1.5; }.strategy-card { grid-template-columns: 1fr; }.brief-actions { flex-direction: column; }.brief-actions button { width: 100%; }
 }
+/* Immersive fullscreen gameplay milestone */
+.gameplay-page {
+  width: 100vw;
+  height: 100dvh;
+  min-height: 100vh;
+  padding: 0;
+  overflow: hidden;
+  background: #080d2d;
+}
+
+.gameplay-stage {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  overflow: hidden;
+}
+
+.gameplay-scene-surface {
+  position: absolute;
+  inset: 0;
+}
+
+.gameplay-page--context-open .gameplay-scene-surface {
+  pointer-events: none;
+}
+
+.gameplay-scene-surface .mars-scene {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+}
+
+.gameplay-command-bar {
+  position: absolute;
+  z-index: 12;
+  top: 0;
+  right: 0;
+  left: 0;
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.65rem clamp(0.75rem, 2vw, 1.5rem);
+  border-bottom: 1px solid rgba(134, 168, 222, 0.18);
+  background: linear-gradient(180deg, rgba(8, 13, 45, 0.94), rgba(8, 13, 45, 0.62) 72%, transparent);
+  backdrop-filter: blur(10px);
+}
+
+.gameplay-back-button {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.55rem 0.8rem;
+  color: var(--white);
+  border: 1px solid rgba(85, 189, 235, 0.35);
+  border-radius: 12px;
+  background: rgba(17, 24, 78, 0.7);
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.gameplay-back-button:hover {
+  border-color: var(--blue-500);
+  background: rgba(40, 85, 139, 0.76);
+}
+
+.fallback-badge {
+  padding: 0.38rem 0.58rem;
+  color: #f9d08d;
+  border: 1px solid rgba(255, 211, 78, 0.3);
+  border-radius: 999px;
+  background: rgba(8, 13, 45, 0.68);
+  font-size: 0.58rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+}
+
+.gameplay-objective-hud,
+.gameplay-resource-hud,
+.gameplay-task-hud,
+.gameplay-pip-hint,
+.gameplay-stage > .control-hint {
+  position: absolute;
+  z-index: 10;
+}
+
+.gameplay-objective-hud {
+  top: 80px;
+  left: clamp(0.75rem, 2vw, 1.5rem);
+  width: min(440px, calc(100vw - 1.5rem));
+}
+
+.gameplay-objective-hud .mission-header {
+  display: block;
+  padding: 0.85rem 1rem;
+  border: 1px solid rgba(134, 168, 222, 0.24);
+  border-radius: 18px;
+  background: rgba(8, 13, 45, 0.78);
+  box-shadow: 0 16px 48px rgba(3, 7, 35, 0.34);
+  backdrop-filter: blur(12px);
+}
+
+.gameplay-objective-hud .mission-header h1 {
+  margin: 0.2rem 0 0.25rem;
+  font-size: clamp(1.1rem, 2vw, 1.55rem);
+  letter-spacing: -0.025em;
+}
+
+.gameplay-objective-hud .mission-header p {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  color: #d4dcf3;
+  font-size: 0.76rem;
+  line-height: 1.4;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.gameplay-objective-hud .mission-progress {
+  width: 100%;
+  margin-top: 0.65rem;
+  text-align: left;
+}
+
+.gameplay-resource-hud {
+  top: 80px;
+  right: clamp(0.75rem, 2vw, 1.5rem);
+  width: min(720px, calc(100vw - 500px));
+}
+
+.gameplay-resource-hud .resource-dashboard {
+  padding: 0.7rem 0.85rem;
+  border-radius: 18px;
+  background: rgba(8, 13, 45, 0.78);
+  backdrop-filter: blur(12px);
+}
+
+.gameplay-resource-hud .resource-dashboard > .section-kicker,
+.gameplay-resource-hud .resource-dashboard > h2,
+.gameplay-resource-hud .resource-dashboard > .micro-note {
+  position: absolute;
+  overflow: hidden;
+  width: 1px;
+  height: 1px;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.gameplay-resource-hud .resource-dashboard__list {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.gameplay-resource-hud .resource-bar {
+  min-width: 0;
+}
+
+.gameplay-resource-hud .resource-bar__heading {
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  gap: 0.25rem;
+  margin-bottom: 0.32rem;
+  font-size: 0.68rem;
+}
+
+.gameplay-resource-hud .resource-bar__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gameplay-resource-hud .resource-bar__track {
+  height: 6px;
+}
+
+.gameplay-stage > .control-hint {
+  bottom: 138px;
+  left: clamp(0.75rem, 2vw, 1.5rem);
+  justify-content: flex-start;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid rgba(134, 168, 222, 0.22);
+  border-radius: 12px;
+  background: rgba(8, 13, 45, 0.72);
+  backdrop-filter: blur(10px);
+}
+
+.gameplay-task-hud {
+  right: 50%;
+  bottom: 18px;
+  width: min(720px, calc(100vw - 2rem));
+  transform: translateX(50%);
+}
+
+.task-prompt {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.75rem;
+  border: 1px solid rgba(85, 189, 235, 0.38);
+  border-radius: 18px;
+  background: rgba(8, 13, 45, 0.86);
+  box-shadow: 0 18px 56px rgba(3, 7, 35, 0.5);
+  backdrop-filter: blur(14px);
+}
+
+.task-prompt--ready {
+  border-color: rgba(99, 230, 166, 0.5);
+}
+
+.task-prompt__beacon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  color: var(--yellow-400);
+  border: 1px solid rgba(85, 189, 235, 0.35);
+  border-radius: 50%;
+  background: rgba(85, 189, 235, 0.12);
+  font-size: 1.45rem;
+  animation: pulse 2.4s ease-in-out infinite;
+}
+
+.task-prompt__copy h2 {
+  margin: 0.12rem 0 0.15rem;
+  font-size: 0.96rem;
+  text-transform: capitalize;
+}
+
+.task-prompt__copy p {
+  margin: 0;
+  color: #b9c4e4;
+  font-size: 0.7rem;
+  line-height: 1.35;
+}
+
+.task-prompt__action {
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.5rem 0.7rem;
+  color: var(--white);
+  border: 1px solid rgba(255, 211, 78, 0.5);
+  border-radius: 12px;
+  background: rgba(255, 145, 61, 0.16);
+  text-align: left;
+  cursor: pointer;
+}
+
+.task-prompt__action kbd {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  color: #201308;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--yellow-400), var(--orange-500));
+  font: inherit;
+  font-weight: 1000;
+}
+
+.task-prompt__action strong,
+.task-prompt__action small {
+  display: block;
+}
+
+.task-prompt__action strong {
+  font-size: 0.72rem;
+}
+
+.task-prompt__action small {
+  margin-top: 0.1rem;
+  color: #b9c4e4;
+  font-size: 0.58rem;
+}
+
+.gameplay-pip-hint {
+  right: clamp(0.75rem, 2vw, 1.5rem);
+  bottom: 18px;
+  width: min(260px, 20vw);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem;
+  border: 1px solid rgba(255, 211, 78, 0.25);
+  border-radius: 16px;
+  background: rgba(8, 13, 45, 0.74);
+  backdrop-filter: blur(10px);
+}
+
+.gameplay-pip-hint .pip-avatar {
+  flex: 0 0 42px;
+  width: 42px;
+  height: 42px;
+}
+
+.gameplay-pip-hint p {
+  margin: 0;
+  color: #b9c4e4;
+  font-size: 0.64rem;
+  line-height: 1.35;
+}
+
+.gameplay-pip-hint strong {
+  display: block;
+  margin-bottom: 0.12rem;
+  color: var(--white);
+}
+
+.contextual-layer {
+  position: absolute;
+  z-index: 30;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 80px 18px 18px;
+  background: linear-gradient(90deg, rgba(8, 13, 45, 0.24), rgba(8, 13, 45, 0.68));
+  backdrop-filter: blur(2px);
+}
+
+.contextual-panel {
+  width: min(510px, 100%);
+  max-height: calc(100dvh - 98px);
+  overflow-y: auto;
+  padding: 1rem;
+  border: 1px solid rgba(85, 189, 235, 0.45);
+  border-radius: 24px;
+  background: rgba(8, 13, 45, 0.96);
+  box-shadow: 0 28px 80px rgba(3, 7, 35, 0.65);
+}
+
+.contextual-panel__heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.8rem;
+}
+
+.contextual-panel__heading h2 {
+  margin: 0.2rem 0 0;
+  font-size: 1.35rem;
+  text-transform: capitalize;
+}
+
+.contextual-panel__safety {
+  padding: 0.35rem 0.48rem;
+  color: var(--success);
+  border: 1px solid rgba(99, 230, 166, 0.32);
+  border-radius: 999px;
+  background: rgba(99, 230, 166, 0.08);
+  font-size: 0.54rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.contextual-panel .alert-card {
+  margin-bottom: 0.75rem;
+}
+
+.contextual-panel .decision-panel {
+  border-radius: 18px;
+  box-shadow: none;
+}
+
+.task-contract-note {
+  margin: 0.75rem 0 0;
+  padding: 0.65rem;
+  color: #9eabd0;
+  border-left: 3px solid var(--blue-500);
+  background: rgba(85, 189, 235, 0.06);
+  font-size: 0.62rem;
+  line-height: 1.45;
+}
+
+/* Sequential mission presentation — temporary adapter-backed state */
+.progression-fixture-note {
+  max-width: 760px;
+  margin: -1.5rem auto 1.5rem;
+  padding: 0.65rem 0.8rem;
+  color: #acb8d8;
+  border: 1px dashed rgba(85, 189, 235, 0.3);
+  border-radius: 12px;
+  background: rgba(85, 189, 235, 0.05);
+  font-size: 0.68rem;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.mission-state {
+  width: fit-content;
+  display: inline-flex;
+  margin-top: 0.8rem;
+  padding: 0.32rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.6rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.mission-state--ready {
+  color: var(--yellow-400);
+  background: rgba(255, 211, 78, 0.1);
+}
+
+.mission-state--completed {
+  color: var(--success);
+  background: rgba(99, 230, 166, 0.1);
+}
+
+.mission-state--locked {
+  color: #aab5d5;
+  background: rgba(170, 181, 213, 0.09);
+}
+
+.mission-card__lock {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  color: var(--yellow-400);
+  border: 1px solid rgba(255, 211, 78, 0.45);
+  border-radius: 50%;
+  background: rgba(8, 13, 45, 0.88);
+  font-size: 1.35rem;
+}
+
+.mission-card--locked {
+  border-style: dashed;
+}
+
+.mission-card--locked:hover {
+  transform: none;
+  border-color: var(--line);
+}
+
+.mission-card--locked .mission-card__visual {
+  filter: saturate(0.45);
+}
+
+.mission-card--completed {
+  border-color: rgba(99, 230, 166, 0.34);
+}
+
+.mission-unlock-copy {
+  min-height: 2.7em;
+  margin: 0 0 0.8rem;
+  color: #b7c2df;
+  font-size: 0.7rem;
+  line-height: 1.4;
+}
+
+.card-button:disabled {
+  color: #8f9abd;
+  border-color: rgba(143, 154, 189, 0.2);
+  background: rgba(84, 94, 132, 0.18);
+  box-shadow: none;
+}
+
+@media (max-width: 1100px) {
+  .gameplay-objective-hud {
+    width: min(360px, 44vw);
+  }
+
+  .gameplay-resource-hud {
+    width: min(430px, 48vw);
+  }
+
+  .gameplay-resource-hud .resource-dashboard__list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .gameplay-pip-hint {
+    display: none;
+  }
+}
+@media (max-width: 760px) {
+  .gameplay-command-bar {
+    min-height: 60px;
+  }
+
+  .gameplay-back-button span:last-child,
+  .fallback-badge,
+  .gameplay-cadet .avatar-identity__copy,
+  .gameplay-cadet .signal {
+    display: none;
+  }
+
+  .gameplay-objective-hud {
+    top: 68px;
+    width: calc(100vw - 1.5rem);
+  }
+
+  .gameplay-objective-hud .mission-header p {
+    -webkit-line-clamp: 1;
+  }
+
+  .gameplay-resource-hud {
+    top: 176px;
+    right: 0.75rem;
+    left: 0.75rem;
+    width: auto;
+  }
+
+  .gameplay-stage > .control-hint {
+    bottom: 132px;
+  }
+
+  .gameplay-task-hud {
+    bottom: 12px;
+  }
+
+  .contextual-layer {
+    padding: 68px 0.5rem 0.5rem;
+  }
+
+  .contextual-panel {
+    max-height: calc(100dvh - 76px);
+  }
+}
+
+@media (max-width: 480px) {
+  .gameplay-command-bar {
+    padding-inline: 0.5rem;
+  }
+
+  .gameplay-cadet .avatar-identity {
+    padding: 0.3rem;
+  }
+
+  .gameplay-objective-hud {
+    top: 64px;
+    left: 0.5rem;
+    width: calc(100vw - 1rem);
+  }
+
+  .gameplay-objective-hud .mission-header {
+    padding: 0.65rem 0.75rem;
+  }
+
+  .gameplay-objective-hud .mission-header h1 {
+    font-size: 1rem;
+  }
+
+  .gameplay-objective-hud .mission-header p {
+    font-size: 0.66rem;
+  }
+
+  .gameplay-resource-hud {
+    top: 164px;
+    right: 0.5rem;
+    left: 0.5rem;
+  }
+
+  .gameplay-resource-hud .resource-dashboard {
+    padding: 0.55rem;
+  }
+
+  .gameplay-resource-hud .resource-dashboard__list {
+    gap: 0.45rem;
+  }
+
+  .gameplay-resource-hud .resource-bar__heading {
+    grid-template-columns: 16px minmax(0, 1fr) auto;
+    font-size: 0.58rem;
+  }
+
+  .gameplay-resource-hud .resource-bar__label {
+    display: none;
+  }
+
+  .gameplay-stage > .control-hint {
+    right: 0.5rem;
+    bottom: 132px;
+    left: 0.5rem;
+    justify-content: center;
+  }
+
+  .task-prompt {
+    grid-template-columns: 36px minmax(0, 1fr);
+    gap: 0.55rem;
+    padding: 0.6rem;
+  }
+
+  .task-prompt__beacon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .task-prompt__copy p {
+    display: none;
+  }
+
+  .task-prompt__action {
+    grid-column: 1 / -1;
+    justify-content: center;
+    min-height: 44px;
+  }
+
+  .contextual-panel {
+    padding: 0.75rem;
+    border-radius: 18px;
+  }
+
+  .contextual-panel__safety {
+    display: none;
+  }
+
+  .contextual-panel .alert-card {
+    grid-template-columns: 38px 1fr;
+    padding: 0.75rem;
+  }
+
+  .contextual-panel .decision-panel {
+    padding: 0.85rem;
+  }
+}
