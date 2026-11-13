@@ -1,0 +1,258 @@
+# TECHNICAL ARCHITECTURE & TEAM INTERFACE CONTRACTS
+**This is the shared implementation contract. All three teammates and all AI coding agents must follow it.**
+
+## 1. Observed repository foundation
+Repo: `Renad-Hazem/junior-astronaut-mission-trainer`, branch `main` at audit time (13 Nov 2026). Existing: Vite, React 19, TypeScript, Three.js, `@react-three/fiber`, `@react-three/drei`, Zustand and ESLint. `src/App.tsx` is still the stock Vite starter. No existing scene, game engine or routing code was observed. The package has scripts `npm run dev`, `npm run build`, `npm run lint`, and `npm run preview`.
+
+**Architecture decision for 24 hours:** no React Router dependency. Keep page routing in one React `App.tsx` driven by a typed screen field in Zustand. No database, API or authentication. No external assets required.
+
+## 2. File ownership & conflict prevention
+| Domain | Owner | Allowed paths | Reserved/shared paths |
+|---|---|---|---|
+| 3D world and build/integration | **Renad** | `src/scene/**`, `public/models/**` (optional), `docs/integration/**` | `package.json`, `vite.config.ts`, `index.html` ONLY after team approval |
+| Data model, pure game logic, missions, science | **Malak** | `src/game/**`, `src/data/**`, `src/science/**`, `src/game/**/*.test.ts` | `src/game/types.ts` is the contract; proposed changes require approval |
+| React pages, HUD, styling and App composition | **Mohamed** | `src/pages/**`, `src/components/ui/**`, `src/styles/**`, `src/App.tsx`, `src/index.css` | imports and routes stay consistent with defined store and scene APIs |
+
+**After initial 12h merge:** Renad may resolve integration-level conflicts in agreed shared paths but must inform the owner first. Every teammate uses a separate branch and a PR; no one asks an AI agent to rewrite entire project directories.
+
+## 3. Proposed directory layout
+```text
+src/
+  App.tsx                          # Mohamed: app-level screen composition
+  index.css                        # Mohamed: reset/design tokens
+  scene/                           # Renad
+    MarsScene.tsx
+    MarsTerrain.tsx
+    MarsBase.tsx
+    MarsLandmarks.tsx
+    SceneHotspot.tsx
+    sceneTypes.ts
+  game/                            # Malak
+    types.ts
+    resourceEngine.ts
+    gameStore.ts
+    reportBuilder.ts
+  data/                            # Malak
+    levels.ts
+    scienceFacts.ts
+  science/                         # Malak
+    factIndex.ts
+  pages/                           # Mohamed
+    HomePage.tsx
+    MissionLibraryPage.tsx
+    GameplayPage.tsx
+    MissionBriefPage.tsx
+  components/ui/                   # Mohamed
+    ResourceBar.tsx
+    ResourceDashboard.tsx
+    MissionHeader.tsx
+    AlertCard.tsx
+    DecisionPanel.tsx
+    ReportTimeline.tsx
+  styles/                          # Mohamed
+    theme.css
+    game.css
+```
+
+## 4. Shared TypeScript model (source of truth: `src/game/types.ts`)
+```ts
+export type ResourceKey =
+  | 'oxygen' | 'water' | 'food' | 'energy'
+  | 'radiationProtection' | 'temperature';
+export type Resources = Record<ResourceKey, number>;
+export type LevelId =
+  | 'first-day-on-mars' | 'power-crisis'
+  | 'oxygen-emergency' | 'mars-survival-challenge';
+export type ScreenId = 'home' | 'library' | 'gameplay' | 'brief';
+export type SceneStatus = 'normal' | 'dust' | 'oxygen_alert'
+  | 'radiation_alert' | 'restored';
+export type HotspotId = 'habitat' | 'solar' | 'oxygen'
+  | 'water' | 'greenhouse' | 'communications' | 'rover';
+export type ResourceDelta = Partial<Resources>;
+
+export interface DecisionOption {
+  id: string;
+  label: string;
+  preview: string; // explain likely trade-off before click
+  effects: ResourceDelta;
+  consequence: string;
+  scienceFactIds: string[];
+}
+export interface MissionEvent {
+  id: string;
+  headline: string;
+  prompt: string;
+  sceneStatus: SceneStatus;
+  hotspotId?: HotspotId;
+  openingEffects?: ResourceDelta; // apply only once on first decision
+  options: DecisionOption[]; // 2 to 3 for MVP
+}
+export interface MissionLevel {
+  id: LevelId;
+  order: number;
+  title: string;
+  difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
+  objective: string;
+  storyIntro: string;
+  initialResources: Resources;
+  events: MissionEvent[];
+  estimatedMinutes: [number, number]; // target estimate, not guaranteed
+}
+export interface DecisionRecord {
+  eventId: string;
+  eventTitle: string;
+  optionId: string;
+  optionLabel: string;
+  before: Resources;
+  after: Resources;
+  deltaApplied: ResourceDelta;
+  consequence: string;
+  scienceFactIds: string[];
+}
+export interface MissionReport {
+  levelId: LevelId;
+  title: string;
+  started: Resources;
+  ended: Resources;
+  decisions: DecisionRecord[];
+  status: 'reviewed' | 'stabilized';
+  scienceFactIds: string[];
+  suggestion: string;
+}
+export interface ScienceFact {
+  id: string;
+  title: string;
+  childFriendlyText: string;
+  advancedText: string;
+  sourceTitle: string;
+  sourceUrl: string; // direct verified NASA article URL
+}
+```
+
+**Type contract is frozen at sprint H+2.** Additive optional fields need an announced PR and a coordinated update. Keep spelling/casing exactly as written. `temperature` is a *0–100 thermal-control index*, NOT °C. Each resource stays an integer between 0 and 100. No new resource keys.
+
+## 5. Game state public API (Malak implements; everyone else consumes)
+```ts
+export interface GameStore {
+  screen: ScreenId;
+  activeLevelId: LevelId | null;
+  eventIndex: number;
+  resources: Resources;
+  initialResources: Resources;
+  decisionHistory: DecisionRecord[];
+  lastDecision: DecisionRecord | null;
+  isAwaitingContinue: boolean;
+  currentReport: MissionReport | null;
+  selectLevel: (id: LevelId) => void;
+  chooseOption: (optionId: string) => void;
+  continueMission: () => void;
+  returnToLibrary: () => void;
+  restartLevel: () => void;
+}
+export const useGameStore: UseBoundStore<StoreApi<GameStore>>;
+```
+
+**Required behavior:** `selectLevel(id)` sets `screen='gameplay'`, resets level resources and event index, loads its data. `chooseOption(id)` is idempotent while `isAwaitingContinue` and applies the current event's opening effect plus chosen option exactly once, clamps all resources and stores a `DecisionRecord`. `continueMission()` advances to the next event, OR builds a Mission Brief and sets `screen='brief'` after final decision. `returnToLibrary()` navigates to library. `restartLevel()` resets that level. Do not auto-advance while the player reads consequences.
+
+**Simplify if necessary:** exact TS import for `UseBoundStore` / `StoreApi` comes from Zustand. Do not make runtime logic depend on TS-only type imports.
+
+## 6. Pure resource engine
+```ts
+export function applyEffects(base: Resources, ...deltas: ResourceDelta[]): Resources;
+// For each of six keys: clamp(round(previous + sum(deltas)), 0, 100)
+export function getResourceHealth(value: number):
+  'healthy' | 'caution' | 'critical';
+// 60–100 / 30–59 / 0–29
+```
+
+Rules: no mutation of input objects; no NaN; support absent keys as delta zero; never let the state drift beyond bounds; optional `normalizeResources()` rejects non-finite input. The event's `openingEffects` is applied **once** only in the `chooseOption` transition for an unresolved current event, not on every render.
+
+## 7. 3D scene public API (Renad implements; Mohamed imports)
+```tsx
+import type { HotspotId, SceneStatus, LevelId } from '../game/types';
+export interface MarsSceneProps {
+  levelId: LevelId;
+  status: SceneStatus;
+  highlightedHotspot?: HotspotId;
+  onInspect?: (hotspotId: HotspotId) => void;
+  reducedMotion?: boolean;
+}
+export default function MarsScene(props: MarsSceneProps): JSX.Element;
+```
+
+Implementation notes: React 19/TS sometimes does not expose the global `JSX` namespace; prefer return inference or `React.JSX.Element` if needed. No local game logic in the Canvas. Scene MUST NOT import Zustand directly; it receives props. Use Canvas, ambient/directional light, `OrthographicCamera` (Drei) or R3F orthographic camera, primitive meshes for 7 named hotspots. `onInspect` is optional, so the UI works even if 3D interaction is temporarily missing. Scene status changes are visual only.
+
+**Interaction contract:** UI always contains an accessible `Inspect system` button as fallback; user must not be blocked by a missed raycast.
+
+## 8. Mohamed screen composition contract
+- `HomePage`: title, short game premise, CTA to library.
+- `MissionLibraryPage`: 4 level cards, order and difficulty, CTA triggers `selectLevel`.
+- `GameplayPage`: left/center 3D scene (Renad component), resource panel, event card with decision options, PIP consequences, explicit `Continue` button.
+- `MissionBriefPage`: initial/final bars, decision timeline, at least 1 fact from `scienceFacts`, constructive suggestion, `Next Level` or `Replay`.
+- `App.tsx` chooses page from `useGameStore(s => s.screen)`; avoid competing page state.
+
+No direct state mutation in UI; only store actions. No duplicated resource calculation.
+
+## 9. Science fact contract
+`src/data/scienceFacts.ts` exports `scienceFacts: Record<string, ScienceFact>` (or a typed equivalent). Every decision's `scienceFactIds` must resolve to a real fact entry, and each fact must have an actual official source URL. No fake NASA API connection. Display factual education as sourced copy but resource effects as fictional game balancing.
+
+## 10. Event payload example
+```ts
+const dustEvent: MissionEvent = {
+  id: 'power-dust-alert',
+  headline: 'Dust Storm Incoming!',
+  prompt: 'The solar array is producing less electricity. Which systems should receive power first?',
+  sceneStatus: 'dust',
+  hotspotId: 'solar',
+  openingEffects: { energy: -18, temperature: -6 },
+  options: [
+    {
+      id: 'prioritize-life-support',
+      label: 'Keep life support running',
+      preview: 'Protect oxygen; use additional battery power',
+      effects: { oxygen: +9, energy: -9, food: -5 },
+      consequence: 'Air systems remain supported, but the greenhouse runs on reduced power.',
+      scienceFactIds: ['NASA-DUST', 'NASA-ECLSS'],
+    },
+    {
+      id: 'balanced-mode',
+      label: 'Switch to balanced mode',
+      preview: 'Save energy but slow food systems',
+      effects: { energy: +11, food: -5, temperature: -5 },
+      consequence: 'The base saves electricity, while growing and heating systems work less.',
+      scienceFactIds: ['NASA-DUST'],
+    },
+  ],
+};
+```
+
+**`+9` or `-18` means fictional game points**, not actual oxygen or energy units. The user should not see raw numerical forecasts without explanation; make choices predictable without making all correct answers obvious.
+
+## 11. Integration smoke test contract
+1. Import `MarsScene` and `useGameStore` without TypeScript errors.
+2. `npm run build` exits zero.
+3. Open Home → choose Level 1 → see six bars and 3D stage.
+4. Pick option; one and only one `DecisionRecord` is added. Bar changes exactly once; consequence text displays.
+5. `Continue` advances event, ending with `Mission Brief` after last event.
+6. Repeat with Levels 2, 3 and 4; no blank page.
+7. Resource values remain between 0 and 100.
+8. In a narrow viewport, cards and choices remain usable; scene can shrink or collapse without trapping user.
+9. Scene fallback is available if WebGL is unsupported; game decisions remain usable.
+
+## 12. Automated verification
+Keep existing `npm run build` and `npm run lint`. If dependencies are already available, add only **pure TypeScript tests** using a lightweight runner if the team agrees; otherwise test resource functions with temporary Node scripts and document exact manual results. Avoid adding entire testing frameworks during integration hour unless necessary.
+
+Suggested test matrix: clamping 0/100; duplicate choice no double debit; event opening applied once; every event has 2+ unique option IDs; every science fact ID resolves; full four-level completion; nonviolent content.
+
+## 13. Branch and PR rules
+`feature/renad-3d`, `feature/malak-game-engine`, `feature/mohamed-ui`. Merge small PRs early; communicate API changes explicitly. PR must state: changed files, screenshot/video, build status, manual flow tested, known blockers. A single integrator (Renad) owns `main` merge coordination, not unilateral editing of coworkers' work. During high-risk final hours, freeze nonessential changes.
+
+## 14. Dependency handoff schedule
+- **H+1:** everyone reads this contract; Malak provides `types.ts` definition or the team copies the approved contract stub into `main`.
+- **H+2:** frozen types and first `levels.ts` fixture merged; parallel development begins.
+- **H+5:** Renad's `MarsScene` accepts test props; Mohamed's page imports stub while Malak implements full state.
+- **H+8:** first end-to-end Level 1 complete.
+- **H+12:** all four levels have authored events; 3D and UI integrated.
+- **H+16:** final four-level smoke test and content/science copy review.
+- **H+20:** release candidate lock; fixes only.
+- **H+24:** demo script + publicly shareable build if deployment is available.
