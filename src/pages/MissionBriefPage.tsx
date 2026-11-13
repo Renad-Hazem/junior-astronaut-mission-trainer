@@ -1,6 +1,6 @@
 import { ResourceBar } from '../components/ui/ResourceBar'
 import { ReportTimeline } from '../components/ui/ReportTimeline'
-import { isLevelUnlocked, missionLevels, resourceMeta, scienceFacts, useGameStore, type ResourceKey } from './__stubs__/gameAdapter'
+import { isLevelUnlocked, missionLevels, resourceMeta, scienceFacts, useGameStore, type ResourceKey } from './integration/gameUi'
 
 const resourceOrder = Object.keys(resourceMeta) as ResourceKey[]
 

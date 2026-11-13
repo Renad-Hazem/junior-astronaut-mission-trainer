@@ -250,12 +250,17 @@
   overflow: hidden;
 }
 
+.gameplay-background-layer {
+  position: absolute;
+  inset: 0;
+}
+
 .gameplay-scene-surface {
   position: absolute;
   inset: 0;
 }
 
-.gameplay-page--context-open .gameplay-scene-surface {
+.gameplay-page--context-open .gameplay-background-layer {
   pointer-events: none;
 }
 
@@ -316,7 +321,7 @@
 .gameplay-resource-hud,
 .gameplay-task-hud,
 .gameplay-pip-hint,
-.gameplay-stage > .control-hint {
+.gameplay-background-layer > .control-hint {
   position: absolute;
   z-index: 10;
 }
@@ -745,7 +750,7 @@
     width: auto;
   }
 
-  .gameplay-stage > .control-hint {
+  .gameplay-background-layer > .control-hint {
     bottom: 132px;
   }
 
@@ -812,7 +817,7 @@
     display: none;
   }
 
-  .gameplay-stage > .control-hint {
+  .gameplay-background-layer > .control-hint {
     right: 0.5rem;
     bottom: 132px;
     left: 0.5rem;

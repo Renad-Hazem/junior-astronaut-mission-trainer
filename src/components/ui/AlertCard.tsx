@@ -1,4 +1,4 @@
-import type { MissionEvent } from '../../pages/__stubs__/gameAdapter'
+import type { MissionEvent } from '../../pages/integration/gameUi'
 
 export function AlertCard({ event }: { event: MissionEvent }) {
   return (

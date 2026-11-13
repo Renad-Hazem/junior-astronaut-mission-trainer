@@ -1,4 +1,4 @@
-import type { MissionEvent, DecisionRecord } from '../../pages/__stubs__/gameAdapter'
+import type { MissionEvent, DecisionRecord } from '../../pages/integration/gameUi'
 
 interface DecisionPanelProps {
   event: MissionEvent

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { AvatarIdentity } from '../components/ui/AvatarIdentity'
 import { AvatarPicker } from '../components/ui/AvatarPicker'
-import { isLevelUnlocked, missionLevels, useGameStore } from './__stubs__/gameAdapter'
+import { isLevelUnlocked, missionLevels, useGameStore } from './integration/gameUi'
 import { useAvatarSelection } from './useAvatarSelection'
 
 const missionIcons = ['🚀', '☀️', 'O₂', '🛡️']

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { AvatarPicker } from '../components/ui/AvatarPicker'
-import { useGameStore } from './__stubs__/gameAdapter'
+import { useGameStore } from './integration/gameUi'
 import { useAvatarSelection } from './useAvatarSelection'
 
 export function HomePage() {

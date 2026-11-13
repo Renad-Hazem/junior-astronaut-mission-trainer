@@ -5,8 +5,9 @@ import { AlertCard } from '../components/ui/AlertCard'
 import { DecisionPanel } from '../components/ui/DecisionPanel'
 import { AvatarIdentity } from '../components/ui/AvatarIdentity'
 import { TaskPrompt } from '../components/ui/TaskPrompt'
-import MarsScene from './__stubs__/MarsSceneAdapter'
-import { missionLevels, useGameStore, type HotspotId } from './__stubs__/gameAdapter'
+import { missionLevels, useGameStore, type HotspotId } from './integration/gameUi'
+import MarsScene from './integration/sceneUi'
+import { sceneIntegration } from './integration/sceneIntegrationStatus'
 import { useAvatarSelection } from './useAvatarSelection'
 
 const gameplayKeys = new Set(['w', 'a', 's', 'd', 'e', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'])
@@ -104,60 +105,62 @@ export function GameplayPage() {
   return (
     <div className={`gameplay-page ${isInspectionUnlocked ? 'gameplay-page--context-open' : ''}`}>
       <section className="gameplay-stage" aria-label="Mars mission gameplay">
-        <div className="gameplay-scene-surface" aria-hidden={isInspectionUnlocked ? 'true' : undefined} inert={isInspectionUnlocked ? true : undefined}>
-          <MarsScene
-            avatarId={selectedAvatarId}
-            levelId={level.id}
-            status={event.sceneStatus}
-            highlightedHotspot={event.hotspotId}
-            onInspect={inspect}
-          />
-        </div>
-
-        <header className="gameplay-command-bar">
-          <button className="gameplay-back-button" type="button" onClick={store.returnToLibrary}>
-            <span aria-hidden="true">←</span>
-            <span>Mission Library</span>
-          </button>
-          <span className="fallback-badge">UI SCENE FALLBACK</span>
-          <div className="gameplay-cadet">
-            <AvatarIdentity avatarId={selectedAvatarId} label="Exploring as" />
-            <span className="signal"><i /> ASTER BASE ONLINE</span>
+        <div className="gameplay-background-layer" aria-hidden={isInspectionUnlocked ? 'true' : undefined} inert={isInspectionUnlocked ? true : undefined}>
+          <div className="gameplay-scene-surface">
+            <MarsScene
+              avatarId={selectedAvatarId}
+              levelId={level.id}
+              status={event.sceneStatus}
+              highlightedHotspot={event.hotspotId}
+              onInspect={inspect}
+            />
           </div>
-        </header>
 
-        <div className="gameplay-objective-hud">
-          <MissionHeader
-            level={level.order}
-            title={level.title}
-            objective={level.objective}
-            currentEvent={store.eventIndex + 1}
-            eventCount={level.events.length}
-          />
-        </div>
+          <header className="gameplay-command-bar">
+            <button className="gameplay-back-button" type="button" onClick={store.returnToLibrary}>
+              <span aria-hidden="true">←</span>
+              <span>Mission Library</span>
+            </button>
+            <span className="fallback-badge">{sceneIntegration.visibleLabel}</span>
+            <div className="gameplay-cadet">
+              <AvatarIdentity avatarId={selectedAvatarId} label="Exploring as" />
+              <span className="signal"><i /> ASTER BASE ONLINE</span>
+            </div>
+          </header>
 
-        <div className="gameplay-resource-hud">
-          <ResourceDashboard resources={store.resources} title="Base systems" compact />
-        </div>
+          <div className="gameplay-objective-hud">
+            <MissionHeader
+              level={level.order}
+              title={level.title}
+              objective={level.objective}
+              currentEvent={store.eventIndex + 1}
+              eventCount={level.events.length}
+            />
+          </div>
 
-        <div className="control-hint" aria-label="Movement controls">
-          <span><kbd>WASD</kbd> or <kbd>↑↓←→</kbd> Move</span>
-          <span><kbd>E</kbd> Interact</span>
-        </div>
+          <div className="gameplay-resource-hud">
+            <ResourceDashboard resources={store.resources} title="Base systems" compact />
+          </div>
 
-        <div className="gameplay-task-hud">
-          <TaskPrompt
-            targetName={targetName}
-            message={inspectionMessage}
-            isReady={isInspectionUnlocked}
-            onInspect={() => inspect(expectedHotspot)}
-            inspectButtonRef={inspectButtonRef}
-          />
-        </div>
+          <div className="control-hint" aria-label="Movement controls">
+            <span><kbd>WASD</kbd> or <kbd>↑↓←→</kbd> Move</span>
+            <span><kbd>E</kbd> Interact</span>
+          </div>
 
-        <div className="gameplay-pip-hint">
-          <span className="pip-avatar" aria-hidden="true">PIP</span>
-          <p><strong>{event.headline}</strong>{event.prompt}</p>
+          <div className="gameplay-task-hud">
+            <TaskPrompt
+              targetName={targetName}
+              message={inspectionMessage}
+              isReady={isInspectionUnlocked}
+              onInspect={() => inspect(expectedHotspot)}
+              inspectButtonRef={inspectButtonRef}
+            />
+          </div>
+
+          <div className="gameplay-pip-hint">
+            <span className="pip-avatar" aria-hidden="true">PIP</span>
+            <p><strong>{event.headline}</strong>{event.prompt}</p>
+          </div>
         </div>
 
         {isInspectionUnlocked && (
