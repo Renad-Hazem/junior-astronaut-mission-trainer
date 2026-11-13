@@ -182,7 +182,48 @@ export default function MarsScene(props: MarsSceneProps): JSX.Element;
 
 Implementation notes: React 19/TS sometimes does not expose the global `JSX` namespace; prefer return inference or `React.JSX.Element` if needed. No local game logic in the Canvas. Scene MUST NOT import Zustand directly; it receives props. Use Canvas, ambient/directional light, `OrthographicCamera` (Drei) or R3F orthographic camera, primitive meshes for 7 named hotspots. `onInspect` is optional, so the UI works even if 3D interaction is temporarily missing. Scene status changes are visual only.
 
-**Interaction contract:** UI always contains an accessible `Inspect system` button as fallback; user must not be blocked by a missed raycast.
+**Interaction contract:** the scene owns character movement, follow-camera behavior, collision/bounds, proximity detection, system highlighting and the `E` key. When the player is within the interaction radius of a system and presses `E`, the scene calls the existing `onInspect(hotspotId)` callback exactly once for that key press. Direct pointer inspection may call the same callback. The scene does not choose options, apply resource effects, advance events or import Zustand.
+
+### 7.1 Playable exploration flow (no new runtime exports)
+The existing interfaces are sufficient and remain unchanged. Integration uses this sequence:
+
+```text
+Player moves with WASD / arrow keys on X/Z (Y is height)
+  → isometric camera follows the astronaut
+  → player enters a system's proximity radius
+  → that system is highlighted and UI shows "Press E to inspect"
+  → player presses E
+  → MarsScene calls onInspect(hotspotId)
+  → Mohamed's existing UI reveals the matching event/decision panel
+  → player calls chooseOption(optionId)
+  → Malak's store applies opening + option effects once
+  → UI shows resource changes and consequence
+  → player explicitly calls continueMission()
+  → next MissionEvent objective/hotspot becomes active, or Mission Brief opens
+```
+
+`MissionEvent.hotspotId` is the authoritative objective-to-scene mapping. For the active event, Mohamed passes `hotspotId` as `highlightedHotspot`. Renad maps the same `HotspotId` value to the corresponding scene interactable:
+
+| `HotspotId` | MarsScene interactable | Typical mission use |
+|---|---|---|
+| `habitat` | Central habitat/dome | habitat checks, leak location, shelter |
+| `solar` | Solar array | dust and power decisions |
+| `oxygen` | Oxygen unit/tanks | air setup and leak repair |
+| `water` | Water recycler/tank | purification and water prioritization |
+| `greenhouse` | Greenhouse | food/growth decisions |
+| `communications` | Communications dish | report/communications objective |
+| `rover` | Rover or rover station | remote inspection/maintenance |
+
+Only the current event's `hotspotId` should open its decision panel. Inspecting another system may show safe descriptive feedback, but must not resolve the event or apply resources. Repeated `E` input while the decision panel is open or `isAwaitingContinue` is true must not call `chooseOption` or duplicate effects. Idempotence remains Malak's store guarantee as well as a UI/scene input guard.
+
+The UI always contains a keyboard-accessible `Inspect System` control that invokes the same inspection path for the active `hotspotId`. If WebGL, proximity detection, a raycast or keyboard input is unavailable, the player must still be able to inspect, decide, continue and finish the level. This fallback does not turn the preferred experience into a dashboard-only game; it is an accessibility and resilience path.
+
+### 7.2 Ownership boundary
+- **Renad / `src/scene/**`:** astronaut representation, delta-time movement, input mapping, map bounds/basic collision, isometric follow camera, proximity/highlight state and calling `onInspect`.
+- **Malak / `src/game/**`, `src/data/**`, `src/science/**`:** active objective/event, `hotspotId`, resources, decisions, consequences, progression, reports and verified science.
+- **Mohamed / UI-owned paths:** movement/objective instructions, nearby prompt presentation, decision/consequence panels, Continue and accessible fallback; consume store state and scene callbacks without calculating effects.
+
+No additive public contract change is required. If later playtesting shows the UI must receive continuous nearby-hotspot state rather than an interaction event, any optional callback such as `onNearbyHotspotChange?` is **REQUIRES TEAM APPROVAL** and must be added in a coordinated contract PR; do not implement or depend on it silently.
 
 ## 8. Mohamed screen composition contract
 - `HomePage`: title, short game premise, CTA to library.

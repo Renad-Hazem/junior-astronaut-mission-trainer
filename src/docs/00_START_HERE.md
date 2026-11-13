@@ -34,16 +34,16 @@ After every level, the player receives a **Mission Brief** showing decisions, be
 - No backend, login, external API calls, AI runtime dependence, multiplayer or complex mobile joystick for the 24-hour build.
 - Every level shares **one 3D Mars base scene** with stage-dependent atmosphere and interactive landmarks. Do not build four separate complex 3D levels.
 - Gameplay uses **data-driven event cards and a deterministic resource engine**. No repeated hard-coded React event logic.
-- Prioritize a complete Home → Mission Library → Level → Decisions → Mission Brief → Next Level loop.
+- Prioritize a complete Home → Mission Library → enter the shared Mars map → move the astronaut → approach and inspect the required system → decide → observe consequences → Mission Brief → Next Level loop. The 3D map is playable space, not decorative background.
 - The person responsible for a file is its sole editor until agreed handoff. Shared type changes need team approval.
 - All AI agents must inspect the existing project, avoid overwriting teammates' files, commit only on their assigned branch and report exact changes.
 - A one-hour experience is the **content/design goal**, not an independently verified runtime guarantee. In 24 hours, target four coherent levels and a high-quality 15–30 minute end-to-end demo. Add optional exploration, choices, reflection and additional authored event variants only after integration. Never pad with unskippable waiting.
 
 ## Minimum viable milestone (MUST ship)
-Four selectable levels, at least three meaningful decisions per level, one shared interactive 3D Mars base, six resource indicators, persistent in-session decision history, level Mission Briefs with NASA-linked science cards, responsive web UI, no crash, and successful `npm run build`.
+Four selectable levels, at least three meaningful decisions per level, one shared interactive 3D Mars base, one controllable low-poly astronaut with WASD/arrow-key movement and an isometric follow camera, proximity + `E` interaction, six resource indicators, persistent in-session decision history, level Mission Briefs with NASA-linked science cards, responsive web UI, no crash, and successful `npm run build`.
 
 ## Expansion milestone (ONLY if on time)
-Animated astronaut, rover investigation, 5–7 interactions per level, accessibility reading modes, sound toggles, simple exploration tasks and save/replay functionality. Measure actual play time before describing it publicly as a 60+ minute game.
+Improved astronaut model/animation, rover investigation, 5–7 interactions per level, touch controls, accessibility reading modes, sound toggles, expanded exploration tasks and save/replay functionality. Basic astronaut movement and system interaction are part of the minimum milestone, not expansion scope. Measure actual play time before describing it publicly as a 60+ minute game.
 
 ## Version boundaries
 This package is documentation and implementation guidance; it **does not** claim that the game code is already built, tested or deployed. No changes were pushed to the shared repository as part of document preparation.

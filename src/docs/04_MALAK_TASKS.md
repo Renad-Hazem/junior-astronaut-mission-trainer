@@ -16,16 +16,20 @@ Create **one deterministic, reusable, well-typed decision engine** that powers a
 - If critical resources fall to 0, offer compassionate `Crew Stabilization` debrief with replay route; no violent animation or punitive game over.
 
 ## Priority task board
-| ID | Time target | Priority | Task and acceptance |
-|---|---:|---|---|
-| MAL-01 | H+0–2 | P0 | Define all types, freeze with team and merge a small `types.ts` PR early |
-| MAL-02 | H+2–4 | P0 | Pure resource engine incl. clamp, health ranges, single-application guarantees |
-| MAL-03 | H+4–6 | P0 | Zustand level selection, choose, continue, debrief, restart actions |
-| MAL-04 | H+5–9 | P0 | Author L1 First Day on Mars and L2 Power Crisis event fixtures |
-| MAL-05 | H+8–11 | P0 | Author L3 Oxygen Emergency and L4 Mars Survival Challenge fixtures |
-| MAL-06 | H+10–13 | P0 | Build Mission Brief summary, evidence URLs, deterministic status and suggestion |
-| MAL-07 | H+13–16 | P0 | Validate event schema, duplicate-click, science ID and all-four-level flow |
-| MAL-08 | H+16–20 | P1 | Tune readability and resource balance based on playtests |
+
+| ID | Priority | Description | Owned files | Dependencies | Acceptance criteria | Integration handoff |
+|---|---|---|---|---|---|---|
+| MAL-01 | P0 | Define and freeze the shared types without renaming existing interfaces. | `src/game/types.ts` | Technical contract approval | Existing resource, level, event, report and scene-related type names match the contract exactly. | Publish the type export path early to Mohamed and Renad; announce any additive proposal before coding it. |
+| MAL-02 | P0 | Implement the pure resource engine, health ranges and single-application rules. | `src/game/**` | Frozen `Resources` and `ResourceDelta` | All six values clamp to 0–100; inputs are not mutated; opening/option effects apply once. | Give Mohamed expected before/after fixtures; Renad does not consume this engine. |
+| MAL-03 | P0 | Implement Zustand selection, choice, continue, report and restart transitions. | `src/game/**` | Level records and report builder | Public actions remain `selectLevel`, `chooseOption`, `continueMission`, `returnToLibrary`, `restartLevel`; duplicate choices are idempotent. | Share the public store import with Mohamed; scene remains store-independent. |
+| MAL-04 | P0 | Author First Day on Mars and Power Crisis with clear objectives and physical system targets. | `src/data/**`, `src/science/**` | Frozen `MissionEvent`/`HotspotId`; GDD | Every event has objective copy, 2–3 choices, consequence/science IDs and a `hotspotId` matching a real scene system. | Provide Renad a level/event → hotspot checklist and Mohamed readable objective/prompt text. |
+| MAL-05 | P0 | Author Oxygen Emergency and Mars Survival Challenge using the same event/interaction model. | `src/data/**`, `src/science/**` | Same as MAL-04 | Four names stay exact; several systems are visited in L4; decisions use all six resources across the mission set. | Hand the complete hotspot sequence to Renad and UI fixtures to Mohamed. |
+| MAL-06 | P0 | Generate a Mission Brief after every level with real history and verified sources. | `src/game/**`, `src/science/**`, `src/data/**` | Completed decision records and fact index | Report includes started/ended values, decisions, status, fact IDs and suggestion; stabilization is supportive. | Confirm `currentReport` shape and science lookup with Mohamed. |
+| MAL-07 | P0 | Validate authored objectives, hotspot mappings, idempotence and all-four-level progression. | `src/game/**`, `src/data/**`, `src/science/**` | Renad's interactable ID list; Mohamed's integration smoke test | Every active event targets an implemented `HotspotId`; repeated `E`/choice input cannot duplicate a decision; Continue advances exactly once. | File exact mismatches against the owning branch rather than editing scene/UI files. |
+| MAL-08 | P1 | Tune readability, resource balance and optional event variety from playtests. | `src/data/**`, `src/science/**`, `src/game/**` | Stable P0 integration and recorded playtests | Changes preserve deterministic outcomes, verified facts and completable four-level flow. | Send changed fixtures/deltas to both teammates before final regression. |
+
+### Objective and hotspot authoring rule
+Malak does not implement movement, collision, cameras or rendering. Each active `MissionEvent.hotspotId` tells the scene which system the astronaut must visit; `headline` and `prompt` tell the UI what objective/problem to show. The same IDs must be reused across all four missions. An event cannot apply effects merely because the astronaut approached a system: effects occur only when the player chooses an option through `chooseOption(optionId)`.
 
 ## Resource rules
 - `Resources`: `oxygen`, `water`, `food`, `energy`, `radiationProtection`, `temperature`, all int 0–100.
@@ -95,6 +99,8 @@ returnToLibrary, restartLevel, four data-driven Mars levels, and a Mission
 Brief report builder. Displayed resources are oxygen, water, food, energy,
 radiationProtection, temperature (the last is 0–100 thermal stability,
 not Celsius). Every level has >=3 choices events and science-referenced lessons.
+Every active event supplies the correct existing HotspotId so Renad's scene can
+direct physical exploration; Malak does not implement movement or rendering.
 Make each decision idempotent until the player continues. Keep meaningful
 cross-resource trade-offs, no traditional win/lose, nonviolent tone. Do not
 add backend, NASA runtime APIs, new dependencies or modify teammate UI/3D files.
@@ -109,3 +115,4 @@ Run build/tests, review actual output, and report files modified and remaining b
 - [ ] Science IDs resolve to actual official URLs
 - [ ] `selectLevel` and replay reset state properly
 - [ ] All choices provide observable trade-offs and child-friendly consequence text
+- [ ] Every active mission event maps to a real scene `HotspotId`

@@ -18,7 +18,7 @@ A colorful, gentle, 3D educational management-adventure for ages 7–15. The pla
 **Setting:** A fictional future Mars base near a safe exploration zone. The crew are off-screen; mission control displays their welfare without depicting distress. The red-orange terrain has small boulders, a greenhouse, solar array, oxygen station, water recycler, communication dish, and central habitat. Isometric camera helps players understand where systems are located. Each completed stage changes a few lights, alert icons, or props in the **same scene**.
 
 **Characters**
-- **Nova:** a friendly cadet/astronaut avatar, optional simple low-poly mesh; no complex character rig required for MVP.
+- **Nova:** the player-controlled friendly cadet/astronaut. A simple reusable low-poly mesh or primitive-built character is sufficient for the MVP; a complex rig is not required, but visible movement through the base is required.
 - **PIP:** cheerful robot advisor in text panels, never scolds the player.
 - **Crew:** represented by a status card; do not model detailed humans in 24 hours.
 
@@ -29,14 +29,22 @@ A colorful, gentle, 3D educational management-adventure for ages 7–15. The pla
 > PIP: "You protected Aster Base through four difficult missions. Every resource connects to another — that's what makes teamwork and science so important. Let's send your Mission Brief to Earth!"
 
 ## 4. Core player loop
-1. **Observe:** See the base, resource bars, a short objective and an alert on the 3D site.
-2. **Investigate:** Click one highlighted landmark; a short explanation or fact is revealed.
-3. **Decide:** Pick one of 2–3 responses with visible *expected trade-off hints*.
-4. **See consequences:** Smoothly update resource bars and relevant base equipment (light changes or warning marker).
-5. **Reflect:** PIP explains what changed and why, then offers the next challenge.
-6. **Debrief:** Mission Brief records the decision trail, resource outcomes, suggestions and NASA-linked science.
+The 3D scene is playable exploration space, not a decorative background for a React dashboard. Every level reuses the same Mars map and the same controllable astronaut while mission data changes the objective, highlighted system, alert state and decisions.
 
-No randomized instant death or combat. Choices must matter but should not make the experience irreversibly unwinnable. If a critical resource is exhausted, invoke a **Stabilization Protocol** and allow a checkpoint retry with an explanation.
+1. **Enter Mars Base:** Load the shared low-poly Aster Base map.
+2. **Receive objective:** PIP and the UI identify the current mission goal and relevant system.
+3. **Control astronaut:** Move Nova on the X/Z ground plane with WASD or arrow keys; Y remains height.
+4. **Explore relevant area:** Walk through the readable isometric layout toward the objective.
+5. **Approach a system:** Proximity detection highlights the relevant base system and shows an interaction prompt.
+6. **Press `E` to interact:** The scene reports the system through the existing `onInspect(hotspotId)` callback. An accessible Inspect System UI control provides the same path when 3D/keyboard interaction is unavailable.
+7. **Inspect the problem:** PIP explains the equipment state and why it matters.
+8. **Choose a response:** Pick one of 2–3 responses with visible *expected trade-off hints*.
+9. **Observe consequences:** Resource bars update once and the relevant base equipment receives lightweight visual feedback.
+10. **Continue:** Read the explanation, then explicitly continue to the next objective; never auto-skip feedback.
+11. **Finish the level:** Complete the authored objectives using the same movement, proximity and decision systems.
+12. **Read Mission Brief:** Review the decision trail, resource outcomes, suggestions and NASA-linked science.
+
+Movement is smooth and frame-rate independent through delta time. The isometric camera follows Nova without making the player steer the camera. Basic map boundaries/collision keep the astronaut on the playable ground and outside landmark geometry. There is no randomized instant death or combat. Choices matter but should not make the experience irreversibly unwinnable. If a critical resource is exhausted, invoke a **Stabilization Protocol** and allow a checkpoint retry with an explanation.
 
 ## 5. The six resources
 | In-game name | Key | Meaning in the game | Learning goal |
@@ -62,7 +70,7 @@ Suggested state colors: Healthy >=60; Caution 30–59; Critical <30. Use words/i
 **Recommended base state:** Oxygen 78; Water 76; Food 70; Energy 72; Radiation Protection 80; Temperature Control 78.
 
 **Sequence (3 core events + 2 stretch interactions):**
-1. **Habitat Check:** click central dome; PIP explains the sealed habitat and atmospheric needs. Tutorial spotlight.
+1. **Habitat Check:** walk to the central dome and press `E`; PIP explains the sealed habitat and atmospheric needs. Tutorial spotlight.
 2. **Air System Setup:** oxygen subsystem needs attention. Choices: `Run oxygen system` (+14 oxygen, -10 energy, -5 water), `Use oxygen reserves` (+12 oxygen, -2 energy), or `Inspect filters first` (+5 oxygen, -3 energy, extra hint). These are *illustrative game balances*, not physical rates.
 3. **Water Recycler:** choices: `Run purification cycle` (+13 water, -8 energy), `Conserve water` (+7 water, -4 food), or `Do a maintenance check` (+8 water, -5 energy and show learning card).
 4. **Greenhouse Plan:** choices: `Grow more food` (+15 food, -11 water, -9 energy), `Use existing rations` (-8 food, +4 energy), or `Balanced schedule` (+7 food, -5 water, -4 energy).
@@ -95,7 +103,7 @@ Suggested state colors: Healthy >=60; Caution 30–59; Critical <30. Use words/i
 
 **Sequence:**
 1. **Leak detected:** scripted oxygen -18 and visible red pulse at habitat.
-2. **Diagnostics:** click a highlighted valve; select from 2–3 labeled inspection clues; always allow a hint.
+2. **Diagnostics:** walk to the highlighted oxygen/valve system and press `E`; select from 2–3 labeled inspection clues; always allow a hint.
 3. **Immediate response:** `Isolate damaged section` (+8 oxygen, -8 energy, -6 temperature), `Use reserve oxygen` (+19 oxygen, -5 energy), `Reduce nonessential circulation` (+7 oxygen, +4 energy, -7 temperature). Include PIP note: conservation alone cannot permanently seal a leak.
 4. **Repair route:** `Patch leak + test` (+15 oxygen, -11 energy), `Remote valve reset` (+8 oxygen, -5 energy), `Call maintenance rover` (+12 oxygen, -7 energy, -4 water).
 5. **Verify seal:** interactive pressure indicator changes from Warning to Stable after completing the repair card; no actual engineering simulation.
@@ -145,7 +153,9 @@ Always open `MissionBrief` after a level ends. Show:
 ## 9. Art direction and implementation economy
 - **Visual vocabulary:** cozy low-poly, chunky shapes, clean isometric view; red/orange ground, navy sky, blue glass, warm white modules, cyan interactive glow, yellow achievement accents.
 - **Provided UI palette:** Royal Blue `#28558B`, Space Navy `#11184E`, Rocket Orange `#FF913D`, Star Yellow `#FFD34E`, Cosmic White `#F4F5FF`, Sky Blue `#55BDEB`.
-- **One reusable stage:** terrain plane, habitat dome, solar array, water recycler, greenhouse, oxygen control, communication dish; ambient light, directional light and stars.
+- **One reusable stage:** terrain plane, habitat dome, solar array, water recycler, greenhouse, oxygen control, communication dish; ambient light, directional light and stars. The six mission systems map to the existing hotspot IDs and remain in consistent locations across all four levels.
+- **One reusable astronaut:** a friendly low-poly/primitive Nova character with readable forward direction, delta-time WASD/arrow movement, X/Z travel, map boundaries and an isometric follow camera. Visual polish and advanced animation are optional; controllable movement is not.
+- **Physical interaction:** the player must approach the relevant system, see a nearby prompt and press `E`. Direct pointer inspection and the accessible UI fallback may also invoke the same interaction callback.
 - **MVP assets:** use primitive mesh spheres, cones, boxes, cylinders with materials. NO external 3D model downloads required for completion.
 - **Scene states:** `normal`, `dust`, `oxygen_alert`, `radiation_alert`, `restored` change light colors and simple particles only; avoid expensive postprocessing.
 - **Nonviolent:** no guns, enemies, blood, injury animations or scary jump scares.

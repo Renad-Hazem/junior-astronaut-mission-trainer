@@ -48,21 +48,23 @@ Build a vivid, game-like, complete React experience for children 7–15 that wor
 Use rounded cards, slightly playful typography, spacious buttons, clear hierarchy, accessible focus rings. Do not ship extremely small text, misleading red-only warnings, lots of forced animation or sensational crisis graphics.
 
 ## Priority task board
-| ID | Time target | Priority | Task and acceptance |
-|---|---:|---|---|
-| MOH-01 | H+0–2 | P0 | Replace starter screens in your branch only; implement design tokens and Home |
-| MOH-02 | H+2–4 | P0 | Four-card Mission Library, stable page composition in `App.tsx` |
-| MOH-03 | H+3–6 | P0 | Resource bars + generic Mission Header + Alert and Decision Panel using fixtures |
-| MOH-04 | H+5–8 | P0 | GameplayPage with scene placeholder, clear decision/continue behavior |
-| MOH-05 | H+7–10 | P0 | MissionBriefPage with before/after and decision list + NASA facts panel |
-| MOH-06 | H+10–13 | P0 | Swap stubs with Malak store and Renad `<MarsScene />` |
-| MOH-07 | H+13–16 | P0 | Mobile responsive behavior, focus navigation and keyboard checks |
-| MOH-08 | H+16–20 | P1 | Animations, polish, loading fallback and small CSS improvement; avoid feature creep |
+Mohamed keeps the screens already implemented; these tasks clarify integration and do not request a rebuild.
+
+| ID | Priority | Description | Owned files | Dependencies | Acceptance criteria | Integration handoff |
+|---|---|---|---|---|---|---|
+| MOH-01 | P0 | Maintain the existing Home screen and design tokens. | `src/App.tsx`, `src/index.css`, `src/styles/**` | Shared palette and screen contract | Home remains responsive and its CTA uses the approved store navigation. | Tell Malak which screen action the CTA consumes; do not edit store code. |
+| MOH-02 | P0 | Maintain the four-card Mission Library and selectable demo flow. | `src/pages/**`, `src/components/ui/**` | Malak's exact four `MissionLevel` records | All four mission names remain selectable and call `selectLevel(id)`. | Report missing level data/IDs to Malak without duplicating it in permanent UI state. |
+| MOH-03 | P0 | Display six resources, current mission objective, movement instructions and event progress. | `src/pages/**`, `src/components/ui/**`, `src/styles/**` | `MissionLevel.objective`, active `MissionEvent`, store resources | Gameplay clearly says WASD/arrows move and `E` interacts; objective and all six accessible bars remain visible/readable. | Provide Renad the available scene viewport and overlay-safe areas; consume Malak's data without resource math. |
+| MOH-04 | P0 | Connect the existing Gameplay screen to the playable scene and gate the relevant decision panel until inspection. | `src/pages/**`, `src/components/ui/**` | Renad's `MarsScene`; active event `hotspotId`; `onInspect` | `onInspect(id)` opens/reveals the decision interface only when `id` matches the active event; inspecting other systems gives descriptive feedback without resolving the event. | Give Renad a tested callback snippet and tell Malak if an authored event lacks `hotspotId`. |
+| MOH-05 | P0 | Maintain Mission Brief with before/after resources, history, explanations and verified science. | `src/pages/**`, `src/components/ui/**`, `src/styles/**` | Malak's `currentReport` and science fact index | Every level ends in a supportive brief with all six resources and real decision history. | Report unresolved science IDs to Malak; never invent source text or URLs. |
+| MOH-06 | P0 | Replace temporary adapters with teammate exports and wire inspection → decision → consequence → Continue. | `src/App.tsx`, `src/pages/**` | Malak store/data exports; Renad default `MarsScene` export | `chooseOption` fires once, consequence remains visible, and explicit `continueMission()` advances; no UI-side effects calculation. | Share exact missing import/export errors with the owning teammate; delete only Mohamed-owned stubs after real integration. |
+| MOH-07 | P0 | Provide the nearby-system prompt, visible focus, and resilient keyboard/WebGL fallback. | `src/pages/**`, `src/components/ui/**`, `src/styles/**`, `src/index.css` | Scene proximity behavior and agreed integration signal | A visible `Press E to inspect` prompt is presented when the current system is reachable; the accessible `Inspect System` button completes the same flow if 3D input/WebGL fails. | Continuous proximity state is not in the frozen API; any new optional callback is **REQUIRES TEAM APPROVAL**. Until approved, coordinate prompt rendering with Renad without inventing an export. |
+| MOH-08 | P1 | Polish responsive behavior, lightweight transitions and optional touch-facing instructions without feature creep. | `src/pages/**`, `src/components/ui/**`, `src/styles/**` | Integrated P0 flow and playtest results | 360px layout has no horizontal trap; controls are ≥44px and reduced-motion remains usable. | Deliver screenshots/manual results to Renad for final integration review. |
 
 ## Shared integration rules
 - `App.tsx` reads `screen` from Malak's `useGameStore`; **do not** implement a second screen state machine.
-- `GameplayPage` obtains current level, event, resources, `chooseOption` and `continueMission` via agreed store API; do not do resource math inside React components.
-- `<MarsScene levelId={...} status={...} highlightedHotspot={...} onInspect={...} />` is owned by Renad. Ask for a mock component if his branch is not merged yet.
+- `GameplayPage` obtains current level, event, resources, `chooseOption` and `continueMission` via agreed store API; do not do resource math inside React components. The current objective and movement controls stay visible while the decision interface is revealed by the matching scene inspection or accessible fallback.
+- `<MarsScene levelId={...} status={...} highlightedHotspot={...} onInspect={...} />` is owned by Renad. Pass the active `MissionEvent.hotspotId` as `highlightedHotspot`; when `onInspect` returns that same ID, reveal the relevant decision panel. Ask for a mock component if his branch is not merged yet.
 - `MissionBriefPage` uses `currentReport` and fact IDs from Malak's science content. Never invent facts or URLs.
 - For the first few hours, use **temporary typed adapters** under `src/pages/__stubs__/` if the interfaces are pending; delete adapters when real exports arrive. Do not commit parallel incompatible stores.
 - Mohamed owns `src/App.tsx`; communicate all requested merge/import edits directly to her.
@@ -93,7 +95,9 @@ src/components/ui/**, src/styles/**, src/index.css.
 Build connected Home, MissionLibrary, MissionGameplay and MissionBrief
 screens for a nonviolent Mars-base management game ages 7–15.
 Implement the six resource bars, event choices with previews, readable
-consequence messages, 3D scene mount and Mission Brief after each level.
+consequence messages, playable 3D scene mount and Mission Brief after each level.
+Keep movement instructions/current objective visible and reveal the matching
+decision when Renad's onInspect returns the active MissionEvent hotspotId.
 Use Malak's store/actions and Renad's MarsSceneProps contract; for temporary
 stubs, match those types exactly. No independent resource calculations,
 backend, authentication, timers or added UI frameworks.
@@ -107,4 +111,6 @@ Run build/lint, report actual changes, and do not overwrite game or 3D files.
 - [ ] Mission Brief shows **all** six resources and science links
 - [ ] Mobile buttons tappable; no horizontal overflow
 - [ ] No dependence on WebGL for game controls
+- [ ] WASD/arrows and `E` instructions plus current objective are visible
+- [ ] Matching `onInspect(hotspotId)` reveals the decision; fallback follows the same path
 - [ ] Explicitly avoids violent/scary imagery and punitive win/lose copy
