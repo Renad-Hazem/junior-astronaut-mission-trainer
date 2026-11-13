@@ -1,19 +1,29 @@
+import { useState } from 'react'
+import { AvatarIdentity } from '../components/ui/AvatarIdentity'
+import { AvatarPicker } from '../components/ui/AvatarPicker'
 import { missionLevels, useGameStore } from './__stubs__/gameAdapter'
+import { useAvatarSelection } from './useAvatarSelection'
 
 const missionIcons = ['🚀', '☀️', 'O₂', '🛡️']
 
 export function MissionLibraryPage() {
   const selectLevel = useGameStore((state) => state.selectLevel)
+  const { selectedAvatarId, selectAvatar } = useAvatarSelection()
+  const [isChangingAvatar, setIsChangingAvatar] = useState(false)
   return (
     <div className="library-page page">
       <header className="topbar">
         <div className="brand"><span className="brand-mark" aria-hidden="true">⌁</span><span>ASTER BASE<small>MISSION NETWORK</small></span></div>
-        <span className="cadet-badge">CADET NOVA · READY</span>
+        <AvatarIdentity avatarId={selectedAvatarId} label="Mission cadet" />
       </header>
       <section className="page-intro">
         <span className="eyebrow">CHOOSE YOUR NEXT CHALLENGE</span>
         <h1>Mission Library</h1>
         <p>Every mission is open for training. Start with Mission 01 or jump straight to the system you want to master.</p>
+        <div className="library-avatar-control">
+          <AvatarIdentity avatarId={selectedAvatarId} />
+          <button type="button" className="secondary-button" onClick={() => setIsChangingAvatar(true)}>Change Astronaut</button>
+        </div>
       </section>
       <section className="mission-grid" aria-label="Available missions">
         {missionLevels.map((level, index) => (
@@ -30,6 +40,13 @@ export function MissionLibraryPage() {
         ))}
       </section>
       <footer className="site-footer">All missions use friendly, nonviolent engineering challenges. You can replay any mission at any time.</footer>
+      {isChangingAvatar && (
+        <AvatarPicker
+          initialAvatarId={selectedAvatarId}
+          onConfirm={(avatarId) => { selectAvatar(avatarId); setIsChangingAvatar(false) }}
+          onCancel={() => setIsChangingAvatar(false)}
+        />
+      )}
     </div>
   )
 }
