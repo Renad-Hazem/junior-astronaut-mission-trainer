@@ -39,12 +39,24 @@
 | QA-034 | Disable WebGL or force scene error | Inspect System fallback permits decision, consequence, Continue and Mission Brief without a crash | Mohamed + Renad |
 | QA-035 | Production build and lint | `npm run build` and `npm run lint` exit successfully or exact pre-existing errors are documented | All |
 | QA-036 | Continuous complete-game session | Home through four Mission Briefs completes without crash, stuck prompt or duplicated transition | All |
+| QA-037 | Open avatar selection before mission entry | Exactly four distinct cards/previews appear with names, descriptions, focus and textual Selected state | Mohamed |
+| QA-038 | Confirm and Change Avatar | Confirm gates mission entry; Change Avatar returns to selection without resetting unrelated mission data unexpectedly | Mohamed + Malak |
+| QA-039 | Reload after selecting each avatar | Valid scoped selection persists; invalid/blocked storage safely uses the agreed default | Mohamed |
+| QA-040 | Enter scene with each Avatar ID | Correct verified model or matching distinct fallback appears; a failed model does not crash Canvas | Renad |
+| QA-041 | Compare all four controllers | Speed, diagonal normalization, collision capsule, camera and interaction radius are identical | Renad |
+| QA-042 | Observe input/state changes | Idle, Walk, Interact and Celebrate are visually distinguishable and never remain stuck | Renad |
+| QA-043 | Inspect supplied GLB files | Real filenames, rights, scale, orientation, geometry/materials and actual clip names are recorded; no invented asset claims | Renad |
+| QA-044 | Use clip-less/corrupt/missing-model test case | Distinct procedural model/animation fallback remains fully playable with meaningful error logging | Renad |
+| QA-045 | Focus decision controls while moving/pressing E | Scene movement and interaction keys are suppressed behind modal/input focus; UI remains keyboard navigable | Mohamed + Renad |
+| QA-046 | Complete one mission with every avatar | Selection remains cosmetic: resources, decision outcomes, score/report and mission difficulty are unchanged | All |
+| QA-047 | Complete four levels with one avatar | Selected identity persists; every level includes movement, interaction, visual/resource feedback and real-history Mission Brief | All |
+| QA-048 | Timed full-game playtest | Actual duration and optional content are recorded; no unverified one-hour claim is used | All |
 
 ## 2. Quick smoke test for every merge (3–5 minutes)
-Start level 1 → move with WASD and arrows → approach the highlighted system → see prompt → press `E` → choose an option → confirm exactly one resource change → read consequence → Continue → finish/brief → library → start level 4 → repeat one physical interaction → verify status/hotspot changes → run `npm run build`. This is faster and safer than only checking the code diff.
+Choose Avatar 3 → confirm → start Power Crisis → move with WASD/arrows → approach Solar → see prompt → press `E` → observe Interact → choose an option → confirm exactly one resource/world change → read consequence → Continue → finish → observe Celebrate → Mission Brief → Change Avatar → verify another appearance → run build/lint.
 
 ## 2.1 Tests requiring manual browser verification
-The following cannot be claimed from TypeScript/build output alone and require a real browser session: QA-014–QA-016 and QA-020–QA-036, except the command-exit portion of QA-035. Record browser/version, keyboard layout, viewport, approximate frame-rate condition, result and any video/screenshot evidence. In particular, movement feel, equal diagonal speed, camera follow, collision, proximity prompts, `E` debouncing and WebGL fallback require manual observation. Automated unit tests may support the resource/idempotence checks but do not replace the end-to-end browser pass.
+The following cannot be claimed from TypeScript/build output alone and require a real browser session: QA-014–QA-016 and QA-020–QA-048, except the command-exit portion of QA-035. Record browser/version, keyboard layout, viewport, approximate frame-rate condition, selected avatar, model/fallback path, result and any evidence. Movement feel, equal diagonal speed, camera/collision, proximity, `E` debouncing, four appearance mappings, animation states, focus suppression and WebGL/model fallbacks require manual observation. Automated tests may support resource/idempotence/metadata checks but do not replace the end-to-end browser pass.
 
 ## 3. Child-suitable UX review
 - Does each instruction tell the player *why* an action matters?
@@ -66,7 +78,7 @@ Design target is **58–72 min** across four levels. Core authored decision-only
 
 ## 5. Three-minute judging/demo pitch
 **0:00–0:25:** "We built a nonviolent Mars-base mission trainer for children aged 7–15. Instead of memorizing facts, children see how science choices affect a crew."  
-**0:25–0:55:** Enter the shared 3D Aster Base, move Nova with the keyboard and reveal six interconnected resources.
+**0:25–0:55:** Choose Avatar 3, confirm, enter the shared 3D Aster Base and reveal six interconnected resources.
 
 **0:55–1:35:** Walk to the Power Crisis solar array, press `E`, solve one choice and show why saving energy changes other systems.
 **1:35–2:10:** Open Oxygen Emergency, discuss reserve-vs-repair trade-off.  
@@ -77,6 +89,9 @@ Design target is **58–72 min** across four levels. Core authored decision-only
 - [ ] All 4 levels exist and are accessible
 - [ ] Each level has 3+ meaningful authored events
 - [ ] 3D scene loads with low complexity
+- [ ] Four avatar cards, Confirm, Change and safe persistence work
+- [ ] Four distinct model/fallback appearances use identical gameplay parameters
+- [ ] Idle/Walk/Interact/Celebrate are visible and reduced-motion safe
 - [ ] Astronaut moves with WASD/arrows, camera follows and map bounds work
 - [ ] Correct proximity highlight/prompt and `E` interaction work for mission hotspots
 - [ ] Repeated `E` and decision clicks never duplicate resource changes

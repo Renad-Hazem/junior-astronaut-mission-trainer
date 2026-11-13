@@ -12,43 +12,45 @@
 
 ---
 
-## Authoritative clarification — playable Mars exploration
+## Authoritative clarification — four-avatar playable Mars exploration
 
-The product is an actual playable 3D exploration game, not a resource dashboard with a decorative scene. This clarification preserves the storyline, four missions, six resources, public interfaces, branches and file ownership described later in this handbook. Where an older copied section calls movement, an astronaut or hotspot interaction optional, this clarification supersedes that wording.
+The product is an actual playable 3D exploration game, not a resource dashboard with a decorative scene. The child selects one of exactly four cosmetic astronaut appearances before mission entry. All four share one controller and identical gameplay. This clarification preserves the storyline, four missions, six resources, existing public interfaces, branches and file ownership described later in this handbook. Where historical copied content calls avatar selection, basic animation, movement or hotspot interaction optional, this section and [`09_FOUR_AVATARS_ANIMATION_GAMEPLAY.md`](09_FOUR_AVATARS_ANIMATION_GAMEPLAY.md) supersede it.
 
 ### Required core loop
-1. Enter the one reusable low-poly Mars Base map.
-2. Receive the current mission objective.
-3. Control one reusable astronaut with WASD or arrow keys.
-4. Explore on the X/Z ground plane while Y remains height.
-5. Approach the relevant base system.
-6. See the nearby highlight/prompt and press `E`.
-7. Inspect the problem through the existing `onInspect(hotspotId)` callback.
-8. Choose an authored response.
-9. Observe exactly-once resource consequences and scene feedback.
-10. Read the explanation and explicitly Continue.
-11. Complete the remaining data-driven objectives.
-12. Read the supportive Mission Brief with real decision history and verified NASA references.
+1. Choose one of four avatars and confirm the selection.
+2. Enter the one reusable low-poly Mars Base map with that appearance.
+3. Receive the current mission objective.
+4. Control the astronaut with WASD or arrow keys.
+5. Explore on the X/Z ground plane while Y remains height.
+6. Approach the relevant base system.
+7. See the nearby highlight/prompt and press `E`.
+8. Inspect the problem through the existing `onInspect(hotspotId)` callback.
+9. Choose an authored response.
+10. Observe exactly-once resource consequences and scene feedback.
+11. Read the explanation and explicitly Continue.
+12. Complete the remaining data-driven objectives and show friendly Celebrate feedback.
+13. Read the supportive Mission Brief with real decision history and verified NASA references.
 
-Movement uses frame delta and normalized diagonal input. An isometric camera follows the astronaut. Basic bounds/collision keep the character in the playable area. The same map, character controller, camera, interactables and resource engine serve **First Day on Mars**, **Power Crisis**, **Oxygen Emergency** and **Mars Survival Challenge**. Gameplay remains friendly, nonviolent and suitable for ages 7–15.
+Movement uses frame delta and normalized diagonal input. An isometric camera follows the astronaut. Basic bounds/collision keep the character in the playable area. Exactly four distinct appearances share the same map, controller, speed, collision, interaction radius, camera, interactables, resources and outcomes across **First Day on Mars**, **Power Crisis**, **Oxygen Emergency** and **Mars Survival Challenge**. Idle, Walk, Interact and Celebrate are P0 visible states using verified clips or procedural fallbacks. Gameplay remains friendly, nonviolent and suitable for ages 7–15.
 
 ### Preserved ownership and integration
-- **Mohamed — UI-owned paths only:** retain the implemented screens; show movement instructions, current objective, interaction prompt, decision/consequence/Continue states and keyboard/WebGL fallback. Consume Malak's store and Renad's callback; never calculate effects in React.
-- **Malak — `src/game/**`, `src/data/**`, `src/science/**`:** own objectives, active `MissionEvent.hotspotId`, decisions, resources, progression, reports and science. Do not implement movement/rendering.
-- **Renad — `src/scene/**`, optional `public/models/**`:** own astronaut, movement, camera, bounds/collision, six system interactables, proximity, highlight, `E` handling and scene feedback. Do not rewrite UI/game logic.
+- **Mohamed — UI-owned paths only:** retain implemented screens; add four avatar cards, Confirm/Change, safe persistence and selected identity; show movement/objective/prompt/decision/consequence/Continue states and fallback. Never calculate effects in React.
+- **Malak — `src/game/**`, `src/data/**`, `src/science/**`:** after approval, own stable cosmetic avatar IDs/metadata plus objectives, `MissionEvent.hotspotId`, decisions, resources, progression, reports and science. Do not implement movement/rendering or avatar-specific outcomes.
+- **Renad — `src/scene/**`, optional verified `public/models/**`:** own four appearances/fallbacks, model audit, semantic animation, one controller, camera, bounds/collision, interactables, proximity, `E` and scene feedback. Do not rewrite UI/game logic.
 
 ```text
-approach current system → highlight/prompt → E → onInspect(hotspotId)
+choose avatar → confirm → enter mission → approach current system
+→ highlight/prompt → E → onInspect(hotspotId)
 → matching UI decision → chooseOption(optionId) → consequence
 → continueMission() → next hotspot or Mission Brief
 ```
 
-The frozen `MarsSceneProps` API remains unchanged. `MissionEvent.hotspotId` maps to the identically named scene interactable. The accessible `Inspect System` control invokes the same logical path when WebGL/keyboard interaction fails. Continuous nearby-hotspot state is not in the frozen API; any optional callback proposal is **REQUIRES TEAM APPROVAL**.
+The frozen APIs remain unchanged. The proposed `AvatarId`, `AvatarDefinition`, canonical metadata and optional `MarsSceneProps.avatarId` are additive and **REQUIRES TEAM APPROVAL**; see `02_TECHNICAL_CONTRACTS.md`. `MissionEvent.hotspotId` maps to the identically named scene interactable. The accessible `Inspect System` control invokes the same logical path when WebGL/keyboard interaction fails. Continuous nearby-hotspot state is not in the frozen API; any optional callback proposal also requires approval.
 
 ### In-progress priority correction
-- **P0:** four complete levels, shared playable map, astronaut movement, follow camera, bounds/collision, proximity + `E`, resource decisions, explicit Continue, per-level Mission Brief, fallback, build/lint.
-- **P1:** better astronaut model, stronger highlighting, smooth animation, dust effects, touch controls, sound/feedback.
-- **P2:** advanced rigging, custom assets, voice acting, large-world exploration and cinematics.
+- **P0:** four avatar choices, four distinct appearances/fallbacks, one controller, Idle/Walk/Interact/Celebrate, four complete levels, shared playable map, movement, camera, bounds/collision, proximity + `E`, decisions, Continue, Mission Brief, fallbacks, build/lint.
+- **P1:** verified GLB polish, smoother blending, stronger highlighting, dust effects, touch controls and sound/feedback.
+- **P2:** advanced custom rigging, new custom assets, voice acting, large-world exploration and cinematics.
 
 Do not restart completed work. Integrate the smallest playable vertical slice on the current team branches, then repeat it across the four data-driven missions. The one-hour target remains aspirational until a timed full-game playtest proves it.
 
@@ -59,6 +61,7 @@ Do not restart completed work. Integrate the smallest playable vertical slice on
 - Project brief and audited repository status
 - Game Design Document, including four levels and the Mission Brief system
 - Technical contracts shared by the three developers
+- Four-avatar, animation, model-fallback and spatial-gameplay specification (`09_FOUR_AVATARS_ANIMATION_GAMEPLAY.md`)
 - 24-hour execution, branch, review and release plan
 - NASA references and educational science facts
 - QA, accessibility and judging demo
@@ -107,7 +110,7 @@ After every level, the player receives a **Mission Brief** showing decisions, be
 - A one-hour experience is the **content/design goal**, not an independently verified runtime guarantee. In 24 hours, target four coherent levels and a high-quality 15–30 minute end-to-end demo. Add optional exploration, choices, reflection and additional authored event variants only after integration. Never pad with unskippable waiting.
 
 ## Minimum viable milestone (MUST ship)
-Four selectable levels, at least three meaningful decisions per level, one shared interactive 3D Mars base, one controllable low-poly astronaut with WASD/arrow movement, isometric follow camera, bounds/collision and proximity + `E` interaction, six resource indicators, persistent in-session decision history, level Mission Briefs with NASA-linked science cards, responsive web UI, no crash, and successful `npm run build`.
+Four selectable levels; four selectable cosmetic astronauts; one controller; P0 Idle/Walk/Interact/Celebrate; at least three meaningful decisions per level; one shared interactive 3D Mars base; WASD/arrow movement; isometric follow camera; bounds/collision; proximity + `E`; six resources; decision history; per-level NASA-linked Mission Briefs; responsive fallback; no crash; successful build/lint.
 
 ## Expansion milestone (ONLY if on time)
 Improved astronaut model/animation, rover investigation, 5–7 interactions per level, touch controls, accessibility reading modes, sound toggles, expanded exploration and save/replay functionality. Basic movement and system interaction are minimum scope. Measure actual play time before describing it publicly as a 60+ minute game.
@@ -138,7 +141,7 @@ A colorful, gentle, 3D educational management-adventure for ages 7–15. The pla
 **Setting:** A fictional future Mars base near a safe exploration zone. The crew are off-screen; mission control displays their welfare without depicting distress. The red-orange terrain has small boulders, a greenhouse, solar array, oxygen station, water recycler, communication dish, and central habitat. Isometric camera helps players understand where systems are located. Each completed stage changes a few lights, alert icons, or props in the **same scene**.
 
 **Characters**
-- **Nova:** the player-controlled friendly cadet/astronaut. A reusable primitive/low-poly character is sufficient; complex rigging is optional, but visible movement is required.
+- **Player astronaut / Cadet Nova:** one of four selectable cosmetic appearances using a single controller. Verified supplied models take precedence; four distinct primitive/low-poly fallbacks keep every choice playable. Complex rigging is optional, but Idle/Walk/Interact/Celebrate feedback is P0.
 - **PIP:** cheerful robot advisor in text panels, never scolds the player.
 - **Crew:** represented by a status card; do not model detailed humans in 24 hours.
 
@@ -149,14 +152,15 @@ A colorful, gentle, 3D educational management-adventure for ages 7–15. The pla
 > PIP: "You protected Aster Base through four difficult missions. Every resource connects to another — that's what makes teamwork and science so important. Let's send your Mission Brief to Earth!"
 
 ## 4. Core player loop
-1. **Enter:** Load the shared Aster Base map and receive the current objective.
-2. **Move:** Control Nova with WASD/arrows on X/Z while the isometric camera follows.
-3. **Explore:** Walk to the system identified by the active event's `hotspotId`.
-4. **Interact:** Enter proximity, see the highlight/prompt and press `E` to call `onInspect(hotspotId)`; retain an accessible UI fallback.
-5. **Inspect and decide:** Read the problem and pick one of 2–3 responses with visible trade-off hints.
-6. **Observe:** Apply resources once and show the consequence plus scene feedback.
-7. **Continue:** Let the player read before explicitly advancing to the next objective.
-8. **Debrief:** Finish the level and open a Mission Brief with history, outcomes and NASA-linked science.
+1. **Choose:** Select and confirm one of four cosmetic avatars before mission entry.
+2. **Enter:** Load the shared Aster Base map with the selected appearance and objective.
+3. **Move:** Use WASD/arrows on X/Z while the isometric camera follows.
+4. **Explore:** Walk to the system identified by the active event's `hotspotId`.
+5. **Interact:** Enter proximity, see the prompt and press `E` to call `onInspect(hotspotId)`; retain an accessible fallback.
+6. **Inspect and decide:** Read the problem and pick one of 2–3 responses with visible trade-off hints.
+7. **Observe:** Apply resources once and show consequence, avatar and equipment feedback.
+8. **Continue:** Let the player read before explicitly advancing.
+9. **Celebrate and debrief:** Show a gentle completion response, then Mission Brief history, outcomes and NASA-linked science.
 
 No randomized instant death or combat. Choices must matter but should not make the experience irreversibly unwinnable. If a critical resource is exhausted, invoke a **Stabilization Protocol** and allow a checkpoint retry with an explanation.
 
@@ -267,7 +271,7 @@ Always open `MissionBrief` after a level ends. Show:
 ## 9. Art direction and implementation economy
 - **Visual vocabulary:** cozy low-poly, chunky shapes, clean isometric view; red/orange ground, navy sky, blue glass, warm white modules, cyan interactive glow, yellow achievement accents.
 - **Provided UI palette:** Royal Blue `#28558B`, Space Navy `#11184E`, Rocket Orange `#FF913D`, Star Yellow `#FFD34E`, Cosmic White `#F4F5FF`, Sky Blue `#55BDEB`.
-- **One reusable stage and astronaut:** terrain plane, habitat dome, solar array, water recycler, greenhouse, oxygen control and communication dish plus one low-poly Nova character. All levels reuse the layout, controller, interactables and follow camera.
+- **One reusable stage/controller, four appearances:** terrain, habitat, solar, water, greenhouse, oxygen and communications plus the selected astronaut. All levels/avatars reuse layout, controller, collision, interactables and follow camera. Verified GLBs are optional inputs; distinct procedural fallbacks are mandatory.
 - **MVP assets:** use primitive mesh spheres, cones, boxes, cylinders with materials. NO external 3D model downloads required for completion.
 - **Scene states:** `normal`, `dust`, `oxygen_alert`, `radiation_alert`, `restored` change light colors and simple particles only; avoid expensive postprocessing.
 - **Nonviolent:** no guns, enemies, blood, injury animations or scary jump scares.
@@ -593,9 +597,9 @@ Short breaks between blocks; swap testers frequently. Avoid leaving the first fu
 **Hard rule:** every owner provides a minimal compileable stub before implementing their full feature, so another teammate is not blocked. If you cannot build all four levels by H12, cut scene complexity, not game loop completeness.
 
 ## 4. Scope cuts (highest to lowest priority)
-P0 MUST: four levels accessible; one shared playable map and astronaut; WASD/arrows; normalized delta-time movement; follow camera; map bounds/basic collision; proximity highlight + `E`; 3 decisions each; six resources; consequences + Continue; Mission Brief per level; fallback; build/deploy.
+P0 MUST: four avatar cards/appearances; safe Confirm/Change/persistence; one controller; Idle/Walk/Interact/Celebrate; four levels; shared map; WASD/arrows; normalized delta-time movement; follow camera; bounds/collision; proximity + `E`; decisions; six resources; consequences + Continue; Mission Brief per level; model/WebGL fallback; build/deploy.
 
-P1 if stable: improved astronaut model, 4–5 decisions per level, stronger highlights, smooth animation, dust effects, touch controls, sound and optional explanations.
+P1 if stable: verified GLB polish, smoother blending, 4–5 decisions per level, stronger highlights, dust effects, touch controls, sound and optional explanations.
 
 P2 only with time: advanced rigging, rover minigame, voice acting, custom assets, large-world exploration and complex cinematics.
 NEVER in this sprint: NASA live APIs, accounts, backend, procedural 3D universe, complex combat, multiplayer, more than one scene environment.
@@ -635,7 +639,7 @@ git push -u origin <YOUR_BRANCH>
 - Last 4 hours: critical fixes only. Never replace major architecture near deadline.
 
 ## 7. Definition of Done at three checkpoints
-**H8 / next available vertical-slice gate:** start a level, move Nova, approach the correct system, press `E`, choose one meaningful option once, see six resource changes/consequence and Continue.
+**H8 / next available vertical-slice gate:** choose Avatar 3, confirm, start Power Crisis, move to Solar, press `E`, show Interact, choose once, see resource/world feedback and Continue.
 **H12:** four levels can be entered/completed; 3D scene loads; all source facts have real URLs.  
 **H20:** no runtime crash, responsive, no duplicate choice effects, `npm run build` and `npm run lint` complete or documented pre-existing lint issues triaged.  
 **H24:** shareable deployment or reliable locally runnable demo, backup video, known limitations visible.
@@ -779,11 +783,20 @@ Official NASA web links are educational references. Credit NASA as the source of
 | QA-030 | Four physical playthroughs | Same map/controller supports all four levels and real-history briefs | All |
 | QA-031 | WebGL failure | Accessible Inspect System path completes the educational flow | Mohamed + Renad |
 | QA-032 | Build/lint/full session | Commands pass and complete game flow has no crash/stuck transition | All |
+| QA-037 | Avatar selection | Exactly four accessible cards, Confirm, Change and textual selection state work | Mohamed |
+| QA-038 | Persistence/fallback | Valid selection persists; invalid/blocked storage safely defaults | Mohamed |
+| QA-039 | Four scene appearances | Correct verified model or distinct fallback renders without crashing | Renad |
+| QA-040 | Equal controller | All avatars share speed, collision, camera, radius and outcomes | Renad + Malak |
+| QA-041 | P0 animation states | Idle/Walk/Interact/Celebrate are distinct, transition and do not stick | Renad |
+| QA-042 | GLB audit/fallback | Real names/rights/clips are recorded; missing/corrupt/clip-less assets fall back | Renad |
+| QA-043 | Modal input guard | Movement and repeated `E` are suppressed while decision controls own focus | Mohamed + Renad |
+| QA-044 | Avatar-neutral mission | Resources, decisions, report and scoring remain identical across choices | All |
+| QA-045 | Complete avatar/level matrix | Every avatar completes a mission; one avatar completes all four levels | All |
 
 ## 2. Quick smoke test for every merge (3–5 minutes)
-Start level 1 → move with WASD/arrows → approach highlighted system → see prompt → press `E` → choose once → confirm exactly one resource change → read consequence → Continue → finish/brief → repeat one physical interaction in level 4 → verify hotspot/status change → run build/lint.
+Choose Avatar 3 → confirm → start Power Crisis → move with WASD/arrows → approach Solar → press `E` → see Interact → choose once → confirm one resource/world change → Continue → observe Celebrate → Mission Brief → Change Avatar → verify another appearance → run build/lint.
 
-Movement feel, equal diagonal speed, follow camera, collision/bounds, proximity prompts, `E` debouncing, WebGL fallback and the continuous four-level session require manual browser verification. Record browser/version, viewport, keyboard layout and evidence; build output alone cannot prove these behaviors.
+Avatar mapping, Idle/Walk/Interact/Celebrate, movement feel, diagonal speed, camera, collision, proximity, `E` debouncing, focus suppression, GLB/WebGL fallbacks and continuous play require manual browser verification. Record browser/version, viewport, selected avatar/model-or-fallback path and evidence; build output alone cannot prove these behaviors. The full matrix remains authoritative in `08_QA_AND_DEMO.md`.
 
 ## 3. Child-suitable UX review
 - Does each instruction tell the player *why* an action matters?
@@ -805,7 +818,7 @@ Design target is **58–72 min** across four levels. Core authored decision-only
 
 ## 5. Three-minute judging/demo pitch
 **0:00–0:25:** "We built a nonviolent Mars-base mission trainer for children aged 7–15. Instead of memorizing facts, children see how science choices affect a crew."  
-**0:25–0:55:** Enter the shared 3D Aster Base, move Nova and reveal six interconnected resources.
+**0:25–0:55:** Choose Avatar 3, confirm, enter the shared 3D Aster Base and reveal six interconnected resources.
 
 **0:55–1:35:** Walk to the Power Crisis solar array, press `E`, solve one choice and show why saving energy changes other systems.
 **1:35–2:10:** Open Oxygen Emergency, discuss reserve-vs-repair trade-off.  
@@ -816,6 +829,9 @@ Design target is **58–72 min** across four levels. Core authored decision-only
 - [ ] All 4 levels exist and are accessible
 - [ ] Each level has 3+ meaningful authored events
 - [ ] 3D scene loads with low complexity
+- [ ] Four avatar cards, Confirm, Change and safe persistence work
+- [ ] Four distinct appearances/fallbacks share identical gameplay parameters
+- [ ] Idle/Walk/Interact/Celebrate work without blocking on missing clips
 - [ ] WASD/arrows, normalized diagonal movement, follow camera and map bounds work
 - [ ] Proximity highlight/prompt and `E` interaction target the current event hotspot
 - [ ] Repeated `E`/choice input never duplicates resource changes

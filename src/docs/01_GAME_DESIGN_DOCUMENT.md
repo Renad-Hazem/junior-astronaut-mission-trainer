@@ -6,6 +6,8 @@
 
 A colorful, gentle, 3D educational management-adventure for ages 7–15. The player becomes **Cadet Nova**, the rookie Mission Controller of **Aster Base**, a tiny science outpost on Mars. An empathetic assistant robot called **PIP** explains the habitat systems and presents incoming alerts. The player investigates equipment, distributes limited resources, and learns why one decision affects other life-support systems. There is no violence, death animation, or enemy to fight. Challenges come from the Martian environment and engineering trade-offs.
 
+Before mission entry, the player chooses one of four visually distinct astronaut appearances. Avatar choice is cosmetic and inclusive: all four share identical speed, collision, interaction range, capabilities, resource rules and outcomes. The story may continue to address the player as Cadet Nova regardless of the selected appearance unless the team later approves display-name personalization.
+
 **Core promise:** A mission should feel like solving an adventure in a living space station, **not** completing a science multiple-choice test.
 
 ## 2. Audience and age design
@@ -18,7 +20,7 @@ A colorful, gentle, 3D educational management-adventure for ages 7–15. The pla
 **Setting:** A fictional future Mars base near a safe exploration zone. The crew are off-screen; mission control displays their welfare without depicting distress. The red-orange terrain has small boulders, a greenhouse, solar array, oxygen station, water recycler, communication dish, and central habitat. Isometric camera helps players understand where systems are located. Each completed stage changes a few lights, alert icons, or props in the **same scene**.
 
 **Characters**
-- **Nova:** the player-controlled friendly cadet/astronaut. A simple reusable low-poly mesh or primitive-built character is sufficient for the MVP; a complex rig is not required, but visible movement through the base is required.
+- **Player astronaut:** one of four selectable appearances rendered through one reusable controller. Use verified supplied models if available; otherwise use four distinct low-poly silhouettes. No appearance has gameplay advantages.
 - **PIP:** cheerful robot advisor in text panels, never scolds the player.
 - **Crew:** represented by a status card; do not model detailed humans in 24 hours.
 
@@ -29,22 +31,31 @@ A colorful, gentle, 3D educational management-adventure for ages 7–15. The pla
 > PIP: "You protected Aster Base through four difficult missions. Every resource connects to another — that's what makes teamwork and science so important. Let's send your Mission Brief to Earth!"
 
 ## 4. Core player loop
-The 3D scene is playable exploration space, not a decorative background for a React dashboard. Every level reuses the same Mars map and the same controllable astronaut while mission data changes the objective, highlighted system, alert state and decisions.
+The 3D scene is playable exploration space, not a decorative background for a React dashboard. Every level reuses the same Mars map and character controller while the selected appearance persists and mission data changes the objective, highlighted system, alert state and decisions.
 
-1. **Enter Mars Base:** Load the shared low-poly Aster Base map.
-2. **Receive objective:** PIP and the UI identify the current mission goal and relevant system.
-3. **Control astronaut:** Move Nova on the X/Z ground plane with WASD or arrow keys; Y remains height.
-4. **Explore relevant area:** Walk through the readable isometric layout toward the objective.
-5. **Approach a system:** Proximity detection highlights the relevant base system and shows an interaction prompt.
-6. **Press `E` to interact:** The scene reports the system through the existing `onInspect(hotspotId)` callback. An accessible Inspect System UI control provides the same path when 3D/keyboard interaction is unavailable.
-7. **Inspect the problem:** PIP explains the equipment state and why it matters.
-8. **Choose a response:** Pick one of 2–3 responses with visible *expected trade-off hints*.
-9. **Observe consequences:** Resource bars update once and the relevant base equipment receives lightweight visual feedback.
-10. **Continue:** Read the explanation, then explicitly continue to the next objective; never auto-skip feedback.
-11. **Finish the level:** Complete the authored objectives using the same movement, proximity and decision systems.
-12. **Read Mission Brief:** Review the decision trail, resource outcomes, suggestions and NASA-linked science.
+1. **Choose and confirm astronaut:** Select one of four cosmetic appearances before mission entry; Change Avatar remains available from the library.
+2. **Enter Mars Base:** Load the shared low-poly Aster Base map with the selected appearance.
+3. **Receive objective:** PIP and the UI identify the current mission goal and relevant system.
+4. **Control astronaut:** Move on the X/Z ground plane with WASD or arrow keys; Y remains height.
+5. **Explore relevant area:** Walk through the readable isometric layout toward the objective.
+6. **Approach a system:** Proximity detection highlights the relevant base system and shows an interaction prompt.
+7. **Press `E` to interact:** The scene reports the system through the existing `onInspect(hotspotId)` callback. An accessible Inspect System UI control provides the same path when 3D/keyboard interaction is unavailable.
+8. **Inspect the problem:** PIP explains the equipment state and why it matters.
+9. **Choose a response:** Pick one of 2–3 responses with visible *expected trade-off hints*.
+10. **Observe consequences:** Resource bars and equipment state update once; the astronaut gives readable interaction feedback.
+11. **Continue:** Read the explanation, then explicitly continue to the next objective; never auto-skip feedback.
+12. **Finish and celebrate:** Complete the authored objectives and show a short friendly celebration before the brief.
+13. **Read Mission Brief:** Review the decision trail, resource outcomes, suggestions and NASA-linked science.
 
 Movement is smooth and frame-rate independent through delta time. The isometric camera follows Nova without making the player steer the camera. Basic map boundaries/collision keep the astronaut on the playable ground and outside landmark geometry. There is no randomized instant death or combat. Choices matter but should not make the experience irreversibly unwinnable. If a critical resource is exhausted, invoke a **Stabilization Protocol** and allow a checkpoint retry with an explanation.
+
+### Required character feedback (P0)
+- **Idle:** subtle breathing, sway or helmet/body bob.
+- **Walk:** visible locomotion, direction-facing and immediate stop when input ends.
+- **Interact:** short reach, point, lean or equivalent pose when equipment opens.
+- **Celebrate:** gentle success gesture after mission completion.
+
+Use embedded GLB clips only after inspecting their real names and content. Procedural group/limb motion is the P0 fallback. Respect reduced-motion preferences while retaining clear pose and text feedback.
 
 ## 5. The six resources
 | In-game name | Key | Meaning in the game | Learning goal |
@@ -154,7 +165,7 @@ Always open `MissionBrief` after a level ends. Show:
 - **Visual vocabulary:** cozy low-poly, chunky shapes, clean isometric view; red/orange ground, navy sky, blue glass, warm white modules, cyan interactive glow, yellow achievement accents.
 - **Provided UI palette:** Royal Blue `#28558B`, Space Navy `#11184E`, Rocket Orange `#FF913D`, Star Yellow `#FFD34E`, Cosmic White `#F4F5FF`, Sky Blue `#55BDEB`.
 - **One reusable stage:** terrain plane, habitat dome, solar array, water recycler, greenhouse, oxygen control, communication dish; ambient light, directional light and stars. The six mission systems map to the existing hotspot IDs and remain in consistent locations across all four levels.
-- **One reusable astronaut:** a friendly low-poly/primitive Nova character with readable forward direction, delta-time WASD/arrow movement, X/Z travel, map boundaries and an isometric follow camera. Visual polish and advanced animation are optional; controllable movement is not.
+- **Four appearances, one controller:** four selectable, visually distinct astronauts share readable forward direction, delta-time WASD/arrow movement, X/Z travel, map boundaries, collision and one isometric follow camera. Basic Idle/Walk/Interact/Celebrate feedback is required; advanced rigs and cinematic animation are optional.
 - **Physical interaction:** the player must approach the relevant system, see a nearby prompt and press `E`. Direct pointer inspection and the accessible UI fallback may also invoke the same interaction callback.
 - **MVP assets:** use primitive mesh spheres, cones, boxes, cylinders with materials. NO external 3D model downloads required for completion.
 - **Scene states:** `normal`, `dust`, `oxygen_alert`, `radiation_alert`, `restored` change light colors and simple particles only; avoid expensive postprocessing.

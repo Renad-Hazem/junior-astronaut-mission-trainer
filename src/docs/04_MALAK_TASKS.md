@@ -27,9 +27,13 @@ Create **one deterministic, reusable, well-typed decision engine** that powers a
 | MAL-06 | P0 | Generate a Mission Brief after every level with real history and verified sources. | `src/game/**`, `src/science/**`, `src/data/**` | Completed decision records and fact index | Report includes started/ended values, decisions, status, fact IDs and suggestion; stabilization is supportive. | Confirm `currentReport` shape and science lookup with Mohamed. |
 | MAL-07 | P0 | Validate authored objectives, hotspot mappings, idempotence and all-four-level progression. | `src/game/**`, `src/data/**`, `src/science/**` | Renad's interactable ID list; Mohamed's integration smoke test | Every active event targets an implemented `HotspotId`; repeated `E`/choice input cannot duplicate a decision; Continue advances exactly once. | File exact mismatches against the owning branch rather than editing scene/UI files. |
 | MAL-08 | P1 | Tune readability, resource balance and optional event variety from playtests. | `src/data/**`, `src/science/**`, `src/game/**` | Stable P0 integration and recorded playtests | Changes preserve deterministic outcomes, verified facts and completable four-level flow. | Send changed fixtures/deltas to both teammates before final regression. |
+| MAL-09 | P0 after approval | Publish four stable cosmetic Avatar IDs and display metadata without model claims. | `src/game/types.ts`, proposed `src/data/avatars.ts` | Three-owner approval of the additive contract; Renad asset audit for any optional URL | Exactly four typed IDs/records exist; IDs do not change gameplay; `modelUrl` is absent unless a real licensed file/path is verified. | Release a small contract/data commit before Mohamed or Renad imports it; announce exact export paths. |
+| MAL-10 | P0 | Verify all four spatial mission sequences remain avatar-neutral and map to the correct equipment. | `src/data/**`, `src/game/**`, `src/science/**` | Existing mission engine; approved IDs are optional metadata only | Every level has physical objectives, decisions, consequences and Mission Brief; selected avatar never changes resources, scoring, collision, speed or outcomes. | Give Mohamed objective/avatar-neutral fixtures and Renad the final hotspot sequence; do not implement rendering/animation. |
 
 ### Objective and hotspot authoring rule
 Malak does not implement movement, collision, cameras or rendering. Each active `MissionEvent.hotspotId` tells the scene which system the astronaut must visit; `headline` and `prompt` tell the UI what objective/problem to show. The same IDs must be reused across all four missions. An event cannot apply effects merely because the astronaut approached a system: effects occur only when the player chooses an option through `chooseOption(optionId)`.
+
+Avatar metadata is cosmetic configuration, not mission state. Do not branch decisions, resource deltas, science, report status or scoring by `AvatarId`. Malak must not invent GLB paths, clip names or character capabilities.
 
 ## Resource rules
 - `Resources`: `oxygen`, `water`, `food`, `energy`, `radiationProtection`, `temperature`, all int 0–100.
@@ -116,3 +120,5 @@ Run build/tests, review actual output, and report files modified and remaining b
 - [ ] `selectLevel` and replay reset state properly
 - [ ] All choices provide observable trade-offs and child-friendly consequence text
 - [ ] Every active mission event maps to a real scene `HotspotId`
+- [ ] Approved avatar metadata contains exactly four stable IDs and no unverified model claims
+- [ ] All mission/resource/report behavior is identical for every avatar

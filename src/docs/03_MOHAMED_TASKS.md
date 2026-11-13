@@ -60,6 +60,9 @@ Mohamed keeps the screens already implemented; these tasks clarify integration a
 | MOH-06 | P0 | Replace temporary adapters with teammate exports and wire inspection → decision → consequence → Continue. | `src/App.tsx`, `src/pages/**` | Malak store/data exports; Renad default `MarsScene` export | `chooseOption` fires once, consequence remains visible, and explicit `continueMission()` advances; no UI-side effects calculation. | Share exact missing import/export errors with the owning teammate; delete only Mohamed-owned stubs after real integration. |
 | MOH-07 | P0 | Provide the nearby-system prompt, visible focus, and resilient keyboard/WebGL fallback. | `src/pages/**`, `src/components/ui/**`, `src/styles/**`, `src/index.css` | Scene proximity behavior and agreed integration signal | A visible `Press E to inspect` prompt is presented when the current system is reachable; the accessible `Inspect System` button completes the same flow if 3D input/WebGL fails. | Continuous proximity state is not in the frozen API; any new optional callback is **REQUIRES TEAM APPROVAL**. Until approved, coordinate prompt rendering with Renad without inventing an export. |
 | MOH-08 | P1 | Polish responsive behavior, lightweight transitions and optional touch-facing instructions without feature creep. | `src/pages/**`, `src/components/ui/**`, `src/styles/**` | Integrated P0 flow and playtest results | 360px layout has no horizontal trap; controls are ≥44px and reduced-motion remains usable. | Deliver screenshots/manual results to Renad for final integration review. |
+| MOH-09 | P0 | Add an incremental Choose Your Astronaut panel to the existing Home flow; do not rebuild completed screens or add a new `ScreenId`. | `src/App.tsx`, `src/pages/**`, `src/components/ui/**`, `src/styles/**` | Approved `AvatarId`/metadata from Malak; real/fallback preview guidance from Renad | Exactly four keyboard/touch-friendly cards show preview, name, description and textual Selected state; Confirm is required before library entry. | Share the selected-ID interface with Renad and storage behavior with Malak; report contract blockers before inventing types. |
+| MOH-10 | P0 | Persist and expose the cosmetic selection with Confirm/Change Avatar. | `src/pages/**`, `src/components/ui/**` | MOH-09; approved optional scene prop | Valid selection survives library/levels/replay and safe reload through a scoped `localStorage` key; invalid/blocked storage falls back without crashing; Change Avatar is available from Library. | Pass `avatarId` to `MarsScene` only after approval; provide Renad a deterministic test ID and fallback case. |
+| MOH-11 | P0 | Show selected identity and responsive animation/interaction feedback without duplicating scene state. | `src/pages/**`, `src/components/ui/**`, `src/styles/**` | Renad's scene states; Malak's active objective/event | Gameplay identifies the selected astronaut, keeps controls/objective/prompt accessible, prevents gameplay keys behind decision inputs and shows encouraging completion feedback. | Coordinate focus-lock behavior with Renad; UI never selects animation clips or calculates resources. |
 
 ## Shared integration rules
 - `App.tsx` reads `screen` from Malak's `useGameStore`; **do not** implement a second screen state machine.
@@ -68,6 +71,7 @@ Mohamed keeps the screens already implemented; these tasks clarify integration a
 - `MissionBriefPage` uses `currentReport` and fact IDs from Malak's science content. Never invent facts or URLs.
 - For the first few hours, use **temporary typed adapters** under `src/pages/__stubs__/` if the interfaces are pending; delete adapters when real exports arrive. Do not commit parallel incompatible stores.
 - Mohamed owns `src/App.tsx`; communicate all requested merge/import edits directly to her.
+- Avatar selection is an incremental Home overlay/panel with four cosmetic choices, not a replacement navigation system. Until the avatar contract is approved, keep any fixture isolated in Mohamed-owned stubs and do not invent production exports.
 
 ## Good age-inclusive microcopy examples
 - `Oops! The habitat needs a little more help.` rather than `Mission failed!`
@@ -113,4 +117,6 @@ Run build/lint, report actual changes, and do not overwrite game or 3D files.
 - [ ] No dependence on WebGL for game controls
 - [ ] WASD/arrows and `E` instructions plus current objective are visible
 - [ ] Matching `onInspect(hotspotId)` reveals the decision; fallback follows the same path
+- [ ] Four avatar cards, Confirm and Change Avatar are keyboard/touch accessible
+- [ ] Valid selection persists safely and is passed to the scene only through the approved contract
 - [ ] Explicitly avoids violent/scary imagery and punitive win/lose copy

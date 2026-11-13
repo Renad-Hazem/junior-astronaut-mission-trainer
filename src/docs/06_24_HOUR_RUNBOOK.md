@@ -8,12 +8,13 @@ Three people working a single 24-hour window cannot safely guarantee a truly pol
 The team has already started implementation. Do **not** restart branches, rebuild completed screens or reset the clock to H0. At the next stand-up, preserve completed work and re-rank only the remaining tasks around this required vertical slice:
 
 ```text
-select mission → enter shared Mars map → move astronaut → approach authored hotspot
+choose one of four avatars → confirm → select mission → enter shared Mars map
+→ move selected astronaut → approach authored hotspot
 → press E → matching decision panel → choose once → read consequence → Continue
-→ complete level → Mission Brief
+→ complete level → Celebrate feedback → Mission Brief
 ```
 
-Renad adds movement, follow camera, bounds/collision and proximity interaction inside `src/scene/**`. Malak preserves the data/store architecture and ensures each event has the correct objective and `hotspotId`. Mohamed connects the already-built UI to `onInspect`, shows controls/objective/prompt and retains the accessible fallback. No owner rebuilds another owner's work.
+Renad adds four avatar renderers/fallbacks, basic Idle/Walk/Interact/Celebrate states, movement, follow camera, bounds/collision and proximity interaction inside `src/scene/**`. Malak preserves the data/store architecture, proposes stable cosmetic IDs/metadata and ensures each event has the correct objective and `hotspotId`. Mohamed incrementally adds the four-card selector to the already-built UI, connects `onInspect`, shows controls/objective/prompt and retains the accessible fallback. No owner rebuilds another owner's work.
 
 ## 2. Twelve 2-hour blocks
 | Hours | Renad — 3D/Integration | Malak — Game/Science | Mohamed — UI | Gate |
@@ -34,19 +35,19 @@ Renad adds movement, follow camera, bounds/collision and proximity interaction i
 Short breaks between blocks; swap testers frequently. Avoid leaving the first full integration until H20.
 
 ## 3. Dependency chain
-`Malak: frozen types + event hotspot IDs` → parallel `Malak: store/events`, `Renad: playable scene + astronaut`, `Mohamed: existing pages + interaction gating` → `Renad/Mohamed: onInspect integration` → `movement + E + decision vertical slice` → `four-level integration / build / deploy` → `All: manual browser QA`.
+`Three-owner approval: AvatarId + optional avatarId prop` → `Malak: small metadata contract + event hotspot IDs` → parallel `Malak: store/events`, `Renad: four appearances + one controller + P0 animation`, `Mohamed: existing pages + selector/interaction gating` → `avatar + onInspect integration` → `selection + movement + E + decision vertical slice` → `four-level integration / build / deploy` → `All: manual browser QA`.
 
 **Hard rule:** every owner provides a minimal compileable stub before implementing their full feature, so another teammate is not blocked. If you cannot build all four levels by H12, cut scene complexity, not game loop completeness.
 
 ## 4. Scope cuts (highest to lowest priority)
-**P0 MUST:** working four-level flow; one reusable Mars map and astronaut; WASD/arrow movement; delta-time normalized motion; isometric follow camera; map bounds/basic collision; proximity highlight + `E` interaction; six resources; data-driven decisions and consequences; explicit Continue; Mission Brief after every level; accessible/WebGL fallback; successful production build.
+**P0 MUST:** exactly four cosmetic avatar choices before mission entry; safe Confirm/Change/persistence; four distinct renderable appearances or fallbacks; one reusable controller; visible Idle/Walk/Interact/Celebrate feedback; working four-level flow; one reusable Mars map; WASD/arrow movement; delta-time normalized motion; isometric follow camera; map bounds/basic collision; proximity highlight + `E` interaction; six resources; data-driven decisions and consequences; explicit Continue; Mission Brief after every level; accessible/WebGL/model fallback; successful production build.
 
-**P1 after P0 is verified:** improved astronaut visual model; clearer system highlighting; smooth lightweight animations; dust-storm feedback; touch controls; improved sound and interaction feedback; 4–5 events per level.
+**P1 after P0 is verified:** verified GLB polish where assets support it; smoother animation blending; clearer system highlighting; dust-storm feedback; touch controls; improved sound and interaction feedback; 4–5 events per level.
 
-**P2 only with time:** advanced character animation/rigging; custom 3D assets; voice acting; large-world exploration; complex cinematics; extra minigames and scenario variants.
+**P2 only with time:** advanced custom rigging/retargeting; new custom 3D assets; voice acting; large-world exploration; complex cinematics; extra minigames and scenario variants.
 NEVER in this sprint: NASA live APIs, accounts, backend, procedural 3D universe, complex combat, multiplayer, more than one scene environment.
 
-All four missions reuse the same map, character controller, camera, proximity interaction and resource engine. The one-hour duration remains aspirational until a complete timed playtest proves it; coherence and reliable interaction take precedence over padding.
+All four avatars and missions reuse the same controller, map, camera, proximity interaction and resource engine. Avatar choice cannot change speed, collision, resources, scoring or outcomes. The one-hour duration remains aspirational until a complete timed playtest proves it; coherence and reliable interaction take precedence over padding.
 
 ## 5. Repo and branch commands
 ```bash
@@ -83,9 +84,9 @@ git push -u origin <YOUR_BRANCH>
 - Last 4 hours: critical fixes only. Never replace major architecture near deadline.
 
 ## 7. Definition of Done at three checkpoints
-**H8 / next available gate:** start a level, move Nova with keyboard, approach the correct system, press `E`, choose one meaningful option once, see six resource changes and consequence, then Continue.
+**H8 / next available gate:** select Avatar 3, confirm, start Power Crisis, move with keyboard, approach Solar, press `E`, choose one meaningful option once, see resource/world consequence, then Continue.
 
-**H12 / core-content gate:** four levels can be entered/completed on the same map; camera follows; bounds work; each event maps to the correct interactable; each brief and source fact resolves.
+**H12 / core-content gate:** every avatar renders/moves with equal gameplay parameters and P0 animation fallback; four levels can be entered/completed on the same map; camera/bounds work; each event maps correctly; each brief/source fact resolves.
 
 **H20 / release-candidate gate:** full four-level browser playthrough has no crash, movement and diagonal speed are usable, repeated `E`/choice input does not duplicate effects, fallback remains responsive, and `npm run build`/`npm run lint` pass or pre-existing issues are explicitly triaged.
 **H24:** shareable deployment or reliable locally runnable demo, backup video, known limitations visible.
@@ -104,4 +105,4 @@ The first line of each agent prompt should specify the branch, owned folders and
 - **Cut:** any P1/P2 feature at risk.
 
 ## 11. Emergency contingency
-If WebGL is temporarily broken, retain Mohamed's accessible decision fallback and show a static Mars-base placeholder so educational progress is not blocked; however, the playable P0 release gate is not satisfied until astronaut movement and `E` interaction work in a supported browser. If the event engine is blocked, use one deterministic array of pre-authored events and a pure `applyEffects`; keep types. If deployment fails, show `npm run dev` locally and save a walkthrough recording. If NASA API is unavailable, **do not** use it; cite official text links from baked-in data.
+If a real GLB is missing, corrupt, unlicensed or lacks clips, use its distinct procedural astronaut and procedural P0 animations; never block selection or a mission and never require a paid asset. If WebGL is temporarily broken, retain Mohamed's accessible decision fallback and show a static Mars-base placeholder so educational progress is not blocked; however, the playable P0 release gate is not satisfied until avatar selection, movement and `E` interaction work in a supported browser. If the event engine is blocked, use deterministic pre-authored events and pure `applyEffects`; keep types. If deployment fails, show `npm run dev` locally and save a walkthrough recording. If NASA API is unavailable, **do not** use it; cite official baked-in source links.

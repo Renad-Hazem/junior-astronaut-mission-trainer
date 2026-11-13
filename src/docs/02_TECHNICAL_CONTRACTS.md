@@ -223,7 +223,58 @@ The UI always contains a keyboard-accessible `Inspect System` control that invok
 - **Malak / `src/game/**`, `src/data/**`, `src/science/**`:** active objective/event, `hotspotId`, resources, decisions, consequences, progression, reports and verified science.
 - **Mohamed / UI-owned paths:** movement/objective instructions, nearby prompt presentation, decision/consequence panels, Continue and accessible fallback; consume store state and scene callbacks without calculating effects.
 
-No additive public contract change is required. If later playtesting shows the UI must receive continuous nearby-hotspot state rather than an interaction event, any optional callback such as `onNearbyHotspotChange?` is **REQUIRES TEAM APPROVAL** and must be added in a coordinated contract PR; do not implement or depend on it silently.
+No additive public contract change is required for playable movement and inspection. If later playtesting shows the UI must receive continuous nearby-hotspot state rather than an interaction event, any optional callback such as `onNearbyHotspotChange?` is **REQUIRES TEAM APPROVAL** and must be added in a coordinated contract PR; do not implement or depend on it silently.
+
+### 7.3 Four-avatar additive proposal — REQUIRES TEAM APPROVAL
+Four selectable cosmetic appearances require a stable identifier shared by data, UI and scene. The following is the smallest backward-compatible proposal. It is documentation only until Mohamed, Malak and Renad approve the exact names and export paths:
+
+```ts
+// Malak-owned: proposed additions to src/game/types.ts
+export type AvatarId =
+  | 'avatar-01' | 'avatar-02' | 'avatar-03' | 'avatar-04';
+
+export interface AvatarDefinition {
+  id: AvatarId;
+  displayName: string;
+  description: string;
+  accentColor: string;
+  modelUrl?: string; // include only after a real, licensed file is verified
+}
+
+// Malak-owned: proposed src/data/avatars.ts
+export const avatars: readonly AvatarDefinition[];
+
+// Renad-owned: proposed additive MarsSceneProps field
+avatarId?: AvatarId; // omitted value renders the agreed default/fallback
+```
+
+This proposal does not rename or make any existing prop/action optional or required differently. Existing callers that omit `avatarId` continue to work. It does not add a new `ScreenId`.
+
+#### Ownership and import expectations
+- **Malak** owns `AvatarId`, `AvatarDefinition` and canonical display metadata. `modelUrl` remains absent until Renad verifies a real filename, asset rights and load path; model rendering is not Malak's responsibility.
+- **Mohamed** imports the approved IDs/metadata for exactly four avatar cards. Selection is a Home overlay/panel before library navigation, with Confirm and Change Avatar. Mohamed owns browser-safe persistence and passes the ID to the scene; no second game store or avatar-specific mission logic.
+- **Renad** imports `AvatarId` as a type and maps each ID to a verified model or distinct procedural fallback. All IDs use one controller, collision capsule, speed and interaction radius.
+
+#### State and data flow
+```text
+Home avatar cards → local selected AvatarId → Confirm
+→ persist scoped key when localStorage is available
+→ Mission Library / Gameplay displays selected identity
+→ Gameplay passes avatarId to MarsScene
+→ scene renders verified model or matching fallback
+```
+
+Avatar selection persists across levels and replay until the player chooses Change Avatar. Invalid, missing or unavailable stored values fall back to the agreed default and must never block mission entry. Selection must not affect resources, decisions, collision, movement speed, mission outcomes or educational scoring.
+
+#### Loading, animation and error behavior
+- Renad inventories actual GLB filenames, rights, geometry, scale, orientation and embedded `AnimationClip` names before mapping `modelUrl`.
+- `useGLTF`/`useAnimations` may consume verified assets using existing dependencies. Never assume clip names; map real clips to semantic Idle/Walk/Interact/Celebrate states.
+- Missing/corrupt/unlicensed models or absent clips use a distinct procedural low-poly/animation fallback. One failed avatar must not crash the scene or selection UI.
+- Idle, Walk, Interact and Celebrate are P0 visual states. Advanced rigging/blending is later polish.
+- Scene movement pauses while a decision/modal input owns keyboard focus. Repeated `E` remains guarded and cannot select an option or duplicate effects.
+- Loading UI and error text remain accessible; WebGL fallback still allows the complete educational decision flow.
+
+Do not implement this proposal until team approval is recorded. After approval, publish the types/metadata in one small Malak-owned contract commit before UI/scene code depends on them.
 
 ## 8. Mohamed screen composition contract
 - `HomePage`: title, short game premise, CTA to library.

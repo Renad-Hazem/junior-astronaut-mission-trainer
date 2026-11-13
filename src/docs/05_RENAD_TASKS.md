@@ -8,13 +8,14 @@ Build a beautiful-enough **interactive 3D Mars base**, with one reusable isometr
 
 ## Definition of done
 - R3F `<Canvas>` renders a Martian ground plane and six recognisable mission systems: Habitat, Solar Array, Water Recycler, Oxygen Unit, Greenhouse, Communications Dish; the optional rover uses the existing `rover` hotspot ID.
-- One reusable low-poly astronaut moves with WASD and arrow keys on X/Z using frame delta; Y remains height. Diagonal speed is normalized.
+- One reusable controller renders the selected one of four distinct astronaut appearances and moves it with WASD/arrow keys on X/Z using frame delta; Y remains height. Diagonal speed is normalized and identical for all avatars.
 - An isometric/orthographic camera follows the astronaut smoothly while preserving a readable view. Lighting is clean and performance acceptable on a normal laptop browser.
 - Basic collision/map bounds keep the player in the playable area and prevent walking through major system landmarks.
 - Proximity highlights the nearby relevant system and `E` calls the existing `onInspect(hotspotId)` once per press.
 - Props follow the `MarsSceneProps` contract exactly. Scene supports `normal`, `dust`, `oxygen_alert`, `radiation_alert`, `restored` through lightweight visual changes.
 - Pointer inspection and `E` interaction call the same `onInspect` path. Missed input never prevents gameplay because Mohamed owns an accessible UI fallback.
-- No real asset downloads or complex astronaut rig is required for MVP; use a readable primitive-built character and distinct low-poly system silhouettes.
+- Real supplied models are preferred only after filename, rights, geometry, scale, orientation and clips are verified. Missing/unusable assets fall back to four distinct primitive-built astronauts; no paid asset or complex custom rig is required.
+- Idle, Walk, Interact and Celebrate are P0 visible states for all four appearances, using verified clips or procedural fallbacks.
 - No changes to Malak's store/types or Mohamed's page code without explicit discussion.
 - The merged product builds and opens on the same repo without a fresh setup.
 
@@ -29,7 +30,12 @@ Build a beautiful-enough **interactive 3D Mars base**, with one reusable isometr
 | REN-05 | P0 | Implement proximity detection, relevant-system highlight and `E` interaction through the frozen props. | `src/scene/**` | `highlightedHotspot`; active event mapping supplied by Malak; `onInspect` supplied by Mohamed | Nearby relevant system is highlighted, prompt is visible, and one `E` press calls `onInspect` once with the correct ID. Holding/repeating `E` does not create decisions. | Provide Mohamed callback behavior and coordinate the prompt presentation; any continuous proximity callback is **REQUIRES TEAM APPROVAL**. |
 | REN-06 | P0 | Apply scene status feedback and preserve fallback behavior. | `src/scene/**` | `SceneStatus`, `reducedMotion` | `normal`, `dust`, `oxygen_alert`, `radiation_alert`, `restored` remain lightweight; scene never owns resource logic; UI fallback works if Canvas fails. | Supply status screenshots and failure behavior to Mohamed. |
 | REN-07 | P0 | Integrate reviewed branches without overwriting teammate ownership and run all four levels. | `src/scene/**`; integration changes only after owner approval | Mohamed UI PR; Malak engine/data PR | Movement → proximity → `E` → matching decision → one consequence → Continue works in each mission. | Log exact import/API blockers for the owning teammate; coordinate PR review before main merge. |
-| REN-08 | P1 | Improve astronaut visual model, system highlights, animation, dust effects, touch controls and sound only after P0 is stable. | `src/scene/**`, optional `public/models/**` | Passing P0 regression and performance check | Enhancements preserve controls, reduced motion, frame rate and build; no large-world or cinematic scope before core completion. | Deliver performance notes and final demo fallback; do not rewrite UI/game logic. |
+| REN-08 | P1 | Improve animation blending, system highlights, dust effects, touch controls and sound only after P0 is stable. | `src/scene/**`, optional `public/models/**` | Passing P0 regression and performance check | Enhancements preserve controls, reduced motion, frame rate and build; no large-world or cinematic scope before core completion. | Deliver performance notes and final demo fallback; do not rewrite UI/game logic. |
+| REN-09 | P0 audit | Inventory the actual four GLB assets if supplied; never invent names or clips. | `src/scene/**`, optional verified `public/models/avatars/**` | Asset files and usage-rights information from the team | Each real file has recorded provenance, filename, load result, bounds, scale, orientation, materials and actual animation clips; unverified assets stay outside runtime mapping. | Give Malak only verified optional model paths and Mohamed representative preview/fallback guidance. |
+| REN-10 | P0 | Render the approved selected `AvatarId` with four distinct procedural fallbacks and one controller. | `src/scene/**`, optional verified `public/models/avatars/**` | Approved Avatar contract; REN-09 | Correct choice appears; each failed/missing model falls back distinctly; all choices share speed, capsule, interaction radius and controls. | Publish ID→renderer mapping and failure behavior; do not alter selection UI or game state. |
+| REN-11 | P0 | Implement semantic Idle/Walk/Interact/Celebrate states using real clips when verified and procedural motion otherwise. | `src/scene/**` | REN-10; actual `gltf.animations` audit | Four states are visible, transition without sticking, stop correctly, respect reduced motion and never block gameplay when clips/rigs are absent. | Share semantic-state behavior and clip audit with Mohamed/QA; UI does not control clip names. |
+| REN-12 | P0 | Integrate avatar feedback with movement, modal focus, equipment interaction and mission completion. | `src/scene/**` | Existing controller/camera/proximity; Mohamed focus state; mission completion signal available through agreed integration | Walk tracks actual input, Interact fires once with `E`, Celebrate is friendly/brief, and movement/E are suppressed while decision inputs own focus. | Report any missing completion/focus signal as **REQUIRES TEAM APPROVAL** rather than adding an export silently. |
+| REN-13 | P1 | Add equipment-state animation, subtle dust/energy feedback and better blending after the four-avatar P0 passes. | `src/scene/**` | Full P0 browser regression | VFX remain lightweight, child-friendly and reduced-motion safe; no paid assets, new engine or photorealism dependency. | Deliver performance/asset notes for release review. |
 
 ## Look-and-feel specification
 - Terrain: flat low-poly/smooth orange-red ground (#A85237 or similar) with 10–20 rock primitives, not realistic sand simulation.
@@ -38,7 +44,7 @@ Build a beautiful-enough **interactive 3D Mars base**, with one reusable isometr
 - Oxygen: white vertical tank(s), cyan gauge and oxygen icon marker.
 - Water: turquoise tank and compact pipe; greenhouse: translucent dome with green plant cones; communications: dish and slender antenna.
 - Space sky: dark navy or light dusty Mars sky depending performance; no photo texture requirement.
-- Character: simple astronaut with clear forward direction; move with normalized WASD/arrow input on X/Z and frame delta. Advanced rigging belongs to P2.
+- Characters: four distinct appearances with clear forward direction, identical normalized WASD/arrow input on X/Z and one frame-delta controller. Verified GLB clips may drive animation; procedural motion is mandatory fallback. Advanced custom rigging belongs to P2.
 - Camera: approx elevation 35–45°, perspective isometric-like, follows the player with a stable offset; manual rotate disabled unless necessary for usability.
 - Scene lighting: one ambient + one directional; do not add shadow maps and postprocessing until after H+16.
 - Alert: use status-based emissive accents, subtle dust fog/tint, or pulsing beacon with reduced-motion fallback.
@@ -55,7 +61,7 @@ Build a beautiful-enough **interactive 3D Mars base**, with one reusable isometr
 8. After merged, coordinate Malak and Mohamed PRs; run all-four-level smoke test.
 
 ## Fallbacks when blocked
-- No fancy astronaut: use a small white/orange capsule-shaped controllable character instead; movement and interaction remain required.
+- Missing/unusable GLB: use the matching distinct low-poly fallback; all four choices, movement and P0 animation states remain available.
 - No asset downloads: basic meshes are adequate.
 - WebGL issue: Mohamed must show `Mars base preview unavailable` and keep 2D UI decisions playable.
 - 3D scene taking too long: keep all six required systems as simple primitives and cut decorative rocks, advanced animation, shadows and effects before cutting movement/interaction.
@@ -92,6 +98,9 @@ successful tests, deployed links or edits.
 - [ ] WASD/arrows move equally; diagonal movement is normalized and frame-rate independent
 - [ ] Camera follows; player remains inside bounds and outside major system geometry
 - [ ] Nearby relevant system highlights and `E` calls `onInspect` once
+- [ ] Exactly four appearances use one controller and identical gameplay parameters
+- [ ] Idle/Walk/Interact/Celebrate work through verified clips or procedural fallback
+- [ ] Missing/corrupt/clip-less GLB never crashes or blocks a mission
 - [ ] Correct `onInspect` IDs
 - [ ] Keyboard/mouse choices remain usable when the Canvas is absent
 - [ ] PR has no unauthorized edits to team-owned paths
