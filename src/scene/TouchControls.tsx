@@ -7,12 +7,12 @@ interface TouchControlsProps {
   canInspect: boolean;
 }
 
-const BUTTON_SIZE = 52;
+const BUTTON_SIZE = 32;
 
 const padStyle: CSSProperties = {
   position: "absolute",
   right: 16,
-  bottom: 130,
+  bottom: 180,
   display: "grid",
   gridTemplateColumns: `repeat(3, ${BUTTON_SIZE}px)`,
   gridTemplateRows: `repeat(3, ${BUTTON_SIZE}px)`,
