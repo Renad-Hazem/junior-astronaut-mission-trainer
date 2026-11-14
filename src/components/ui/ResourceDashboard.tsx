@@ -1,5 +1,5 @@
 import { ResourceBar } from './ResourceBar'
-import type { Resources, ResourceKey } from '../../pages/__stubs__/gameAdapter'
+import type { Resources, ResourceKey } from '../../game/uiAdapter'
 
 const resourceOrder: ResourceKey[] = ['oxygen', 'water', 'food', 'energy', 'radiationProtection', 'temperature']
 

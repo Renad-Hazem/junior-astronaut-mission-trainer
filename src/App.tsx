@@ -3,7 +3,7 @@ import { MissionLibraryPage } from './pages/MissionLibraryPage'
 import { GameplayPage } from './pages/GameplayPage'
 import { MissionBriefPage } from './pages/MissionBriefPage'
 import { AvatarSelectionProvider } from './pages/AvatarSelectionProvider'
-import { useGameStore } from './pages/__stubs__/gameAdapter'
+import { useGameStore } from './game/uiAdapter'
 import './styles/theme.css'
 import './styles/game.css'
 
