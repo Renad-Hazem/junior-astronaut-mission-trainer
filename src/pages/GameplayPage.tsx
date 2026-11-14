@@ -93,7 +93,7 @@ export function GameplayPage() {
   }, [isInspectionUnlocked]);
 
   // Sound only observes the game; it never changes resources or decisions.
-  const { observeRoot: observeAudioRoot } = useGameplayAudio({
+  const { observeRoot: observeAudioRoot, onMovementChange } = useGameplayAudio({
     sceneStatus: event?.sceneStatus ?? "normal",
     inputLocked: isInspectionUnlocked || isChatOpen,
   });
@@ -183,11 +183,8 @@ export function GameplayPage() {
             highlightedHotspot={event.hotspotId}
             onInspect={inspect}
             inputLocked={isInspectionUnlocked || isChatOpen}
-            // AUDIO HANDOFF: once MarsSceneProps exposes
-            // `onMovementChange?: (moving: boolean) => void`, also destructure
-            // `onMovementChange` from useGameplayAudio above and add:
-            //   onMovementChange={onMovementChange}
-            // Footsteps stay silent until then (see src/audio/README.md).
+            // Footsteps follow the scene's real-displacement signal (see src/scene/sceneCallbacks.ts).
+            onMovementChange={onMovementChange}
           />
         </div>
 
