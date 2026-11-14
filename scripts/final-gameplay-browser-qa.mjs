@@ -120,6 +120,15 @@ try {
     }
     throw new Error(`Timed out waiting for ${selector}`)
   }
+  const reloadAndWait = async () => {
+    const before = await evaluate('performance.timeOrigin')
+    await send('Page.reload')
+    for (let i = 0; i < 200; i += 1) {
+      const now = await evaluate('performance.timeOrigin').catch(() => before)
+      if (now !== before) break
+      await wait(50)
+    }
+  }
   const nearbyHotspot = () => evaluate(`document.querySelector('.mars-scene')?.dataset.nearbyHotspot ?? ''`)
   const holdUntilNearby = async (hotspot, keyValue, code, timeout = 6000) => {
     await key('keyDown', keyValue, code)
@@ -215,7 +224,7 @@ try {
   await send('Page.navigate', { url: appUrl })
   await waitForSelector('.hero-cta')
   await evaluate(`localStorage.clear()`)
-  await send('Page.reload')
+  await reloadAndWait()
   await waitForSelector('.hero-cta')
   await enterLibrary()
 
@@ -316,7 +325,7 @@ try {
   await waitForSelector('.mission-grid')
 
   // Browser refresh preserves Level 2 unlock.
-  await send('Page.reload')
+  await reloadAndWait()
   await waitForSelector('.hero-cta')
   await enterLibrary()
   const afterRefreshLocks = await evaluate(`[...document.querySelectorAll('.card-button')].map(button=>button.disabled)`)
