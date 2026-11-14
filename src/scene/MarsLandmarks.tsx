@@ -73,6 +73,24 @@ export function Habitat({ shield }: { shield: boolean }) {
           />
         </mesh>
       )}
+      {/* --- Enhancements: ventilation units on roof --- */}
+      <mesh position={[-0.5, 3.75, 0.3]}>
+        <cylinderGeometry args={[0.12, 0.12, 0.25, 8]} />
+        <Mat color={METAL} />
+      </mesh>
+      <mesh position={[0.5, 3.75, -0.3]}>
+        <cylinderGeometry args={[0.1, 0.1, 0.2, 8]} />
+        <Mat color={METAL} />
+      </mesh>
+      {/* Flag pole beside airlock */}
+      <mesh position={[1.0, 1.35, 2.8]}>
+        <cylinderGeometry args={[0.025, 0.025, 1.5, 6]} />
+        <Mat color={METAL} />
+      </mesh>
+      <mesh position={[1.0, 2.0, 2.8]} rotation={[0, 0, Math.PI / 2]}>
+        <coneGeometry args={[0.2, 0.4, 3]} />
+        <Mat color={ORANGE} />
+      </mesh>
     </group>
   );
 }
@@ -106,6 +124,16 @@ export function SolarArray({ dusty }: { dusty: boolean }) {
       <mesh position={[0, 0.25, 1.35]}>
         <boxGeometry args={[0.6, 0.5, 0.4]} />
         <Mat color={WHITE} />
+      </mesh>
+      {/* --- Enhancements: junction box between panels --- */}
+      <mesh position={[0, 0.25, -0.2]}>
+        <boxGeometry args={[0.3, 0.3, 0.3]} />
+        <Mat color={DARK} />
+      </mesh>
+      {/* Cable from junction box to control box */}
+      <mesh position={[0, 0.25, 0.55]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[0.03, 0.03, 1.15, 6]} />
+        <Mat color={DARK} metalness={0.4} />
       </mesh>
     </group>
   );
@@ -164,6 +192,20 @@ export function OxygenUnit({ alert, reducedMotion }: { alert: boolean; reducedMo
           <Mat color={CYAN} emissive={CYAN} emissiveIntensity={0.6} />
         </mesh>
       </group>
+      {/* --- Enhancements: exhaust vents on sides --- */}
+      <mesh position={[1.2, 1.0, -0.1]}>
+        <boxGeometry args={[0.04, 0.2, 0.15]} />
+        <Mat color={METAL} metalness={0.4} />
+      </mesh>
+      <mesh position={[-1.2, 1.0, -0.1]}>
+        <boxGeometry args={[0.04, 0.2, 0.15]} />
+        <Mat color={METAL} metalness={0.4} />
+      </mesh>
+      {/* Status display */}
+      <mesh position={[0, 0.55, 0.66]}>
+        <boxGeometry args={[0.2, 0.12, 0.04]} />
+        <Mat color={CYAN} emissive={CYAN} emissiveIntensity={0.5} />
+      </mesh>
     </group>
   );
 }
@@ -206,6 +248,16 @@ export function WaterRecycler() {
       <mesh position={[1.15, 1.4, 0]}>
         <sphereGeometry args={[0.13, 8, 6]} />
         <Mat color={METAL} metalness={0.5} />
+      </mesh>
+      {/* --- Enhancements: drain/outlet pipe at base --- */}
+      <mesh position={[-0.35, 0.25, 1.05]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[0.08, 0.08, 0.5, 8]} />
+        <Mat color={METAL} metalness={0.5} />
+      </mesh>
+      {/* Filter housing */}
+      <mesh position={[-0.35, 0.25, 1.35]}>
+        <boxGeometry args={[0.25, 0.2, 0.15]} />
+        <Mat color={WHITE} />
       </mesh>
     </group>
   );
@@ -258,6 +310,24 @@ export function Greenhouse() {
           side={DoubleSide}
         />
       </mesh>
+      {/* --- Enhancements: grow lights inside dome --- */}
+      <mesh position={[0.4, 0.9, 0.3]}>
+        <sphereGeometry args={[0.06, 8, 6]} />
+        <Mat color="#ffe066" emissive="#ffe066" emissiveIntensity={0.3} />
+      </mesh>
+      <mesh position={[-0.6, 0.85, -0.4]}>
+        <sphereGeometry args={[0.06, 8, 6]} />
+        <Mat color="#ffe066" emissive="#ffe066" emissiveIntensity={0.3} />
+      </mesh>
+      <mesh position={[0.1, 0.95, -0.7]}>
+        <sphereGeometry args={[0.05, 8, 6]} />
+        <Mat color="#ffe066" emissive="#ffe066" emissiveIntensity={0.3} />
+      </mesh>
+      {/* Water inlet pipe at base */}
+      <mesh position={[2.1, 0.15, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[0.06, 0.06, 0.5, 6]} />
+        <Mat color={METAL} metalness={0.4} />
+      </mesh>
     </group>
   );
 }
@@ -303,6 +373,16 @@ export function CommunicationsDish({ reducedMotion }: { reducedMotion: boolean }
       <mesh position={[0.95, 3.65, -0.45]}>
         <sphereGeometry args={[0.09, 8, 6]} />
         <Mat color="#ff7b6b" emissive="#ff7b6b" emissiveIntensity={0.9} />
+      </mesh>
+      {/* --- Enhancements: equipment rack at base --- */}
+      <mesh position={[-0.75, 0.35, 0.2]}>
+        <boxGeometry args={[0.4, 0.6, 0.3]} />
+        <Mat color={DARK} />
+      </mesh>
+      {/* Cable conduit to mast */}
+      <mesh position={[-0.35, 0.25, 0.1]} rotation={[0, 0.4, Math.PI / 2]}>
+        <cylinderGeometry args={[0.025, 0.025, 0.7, 6]} />
+        <Mat color={METAL} metalness={0.4} />
       </mesh>
     </group>
   );
@@ -351,6 +431,31 @@ export function Rover() {
       <mesh position={[-0.5, 1.55, -0.8]}>
         <cylinderGeometry args={[0.025, 0.025, 1.0, 6]} />
         <Mat color={METAL} />
+      </mesh>
+      {/* --- Enhancements: headlights at front --- */}
+      <mesh position={[-0.45, 0.7, 1.12]}>
+        <sphereGeometry args={[0.07, 8, 6]} />
+        <Mat color="#fff7d6" emissive="#fff7d6" emissiveIntensity={0.8} />
+      </mesh>
+      <mesh position={[0.45, 0.7, 1.12]}>
+        <sphereGeometry args={[0.07, 8, 6]} />
+        <Mat color="#fff7d6" emissive="#fff7d6" emissiveIntensity={0.8} />
+      </mesh>
+      {/* Sample scoop arm extending from rear */}
+      <group position={[-0.3, 0.7, -1.1]} rotation={[-0.3, 0, 0]}>
+        <mesh position={[0, -0.15, -0.3]}>
+          <cylinderGeometry args={[0.03, 0.03, 0.6, 6]} />
+          <Mat color={METAL} metalness={0.5} />
+        </mesh>
+        <mesh position={[0, -0.4, -0.45]}>
+          <boxGeometry args={[0.2, 0.12, 0.18]} />
+          <Mat color={METAL} metalness={0.5} />
+        </mesh>
+      </group>
+      {/* Antenna flag */}
+      <mesh position={[-0.5, 2.05, -0.8]} rotation={[0, 0, Math.PI / 2]}>
+        <coneGeometry args={[0.12, 0.25, 3]} />
+        <Mat color={ORANGE} />
       </mesh>
     </group>
   );

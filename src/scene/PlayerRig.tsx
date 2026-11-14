@@ -39,6 +39,7 @@ interface PlayerRigProps {
   /** Input sources (keyboard, touch); a direction is active if any source holds it. */
   inputs: readonly RefObject<InputState>[];
   onNearbyChange: (id: HotspotId | null) => void;
+  onMovementChange?: (moving: boolean) => void;
 }
 
 /**
@@ -53,6 +54,7 @@ export default function PlayerRig({
   customPhotoUrl,
   inputs,
   onNearbyChange,
+  onMovementChange,
 }: PlayerRigProps) {
   const groupRef = useRef<Group>(null);
   const motionRef = useRef<AstronautMotion>({ moving: false });
@@ -61,13 +63,39 @@ export default function PlayerRig({
   const nearbyRef = useRef<HotspotId | null>(null);
   const snapCameraRef = useRef(true);
   const mergedInputRef = useRef<InputState>(createInputState());
+  const onMovementChangeRef = useRef(onMovementChange);
+  const lastEmittedMovingRef = useRef(false);
+
+  useEffect(() => {
+    onMovementChangeRef.current = onMovementChange;
+  }, [onMovementChange]);
+
+  const emitMovementChange = (moving: boolean) => {
+    if (lastEmittedMovingRef.current !== moving) {
+      lastEmittedMovingRef.current = moving;
+      onMovementChangeRef.current?.(moving);
+    }
+  };
 
   // A new level starts back at the spawn point; the map itself is reused.
   useEffect(() => {
     positionRef.current = { ...PLAYER_SPAWN };
     headingRef.current = PLAYER_SPAWN_HEADING;
     snapCameraRef.current = true;
+    emitMovementChange(false);
   }, [levelId]);
+
+  useEffect(() => {
+    if (inputLocked) {
+      emitMovementChange(false);
+    }
+  }, [inputLocked]);
+
+  useEffect(() => {
+    return () => {
+      emitMovementChange(false);
+    };
+  }, []);
 
   useFrame((state, delta) => {
     const merged = mergedInputRef.current;
@@ -84,14 +112,20 @@ export default function PlayerRig({
 
     const direction = screenToWorld(readInputVector(merged));
     const moving = direction.x !== 0 || direction.z !== 0;
+    const prev = positionRef.current;
     const next = resolveCollisions(
-      stepPosition(positionRef.current, direction, PLAYER_SPEED, delta),
+      stepPosition(prev, direction, PLAYER_SPEED, delta),
       OBSTACLES,
       PLAYER_RADIUS,
       PLAYER_BOUNDS,
     );
+    const dx = next.x - prev.x;
+    const dz = next.z - prev.z;
+    const actuallyMoving = !inputLocked && moving && dx * dx + dz * dz > 1e-6;
+
     positionRef.current = next;
     motionRef.current.moving = moving;
+    emitMovementChange(actuallyMoving);
 
     if (moving) {
       const targetHeading = Math.atan2(direction.x, direction.z);
