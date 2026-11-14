@@ -16,7 +16,7 @@ import {
   missionLevels,
   useGameStore,
   type HotspotId,
-} from "./__stubs__/gameAdapter";
+} from "../game/uiAdapter";
 import { useAvatarSelection } from "./useAvatarSelection";
 
 const gameplayKeys = new Set([

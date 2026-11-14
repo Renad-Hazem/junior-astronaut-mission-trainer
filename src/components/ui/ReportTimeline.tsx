@@ -1,4 +1,4 @@
-import { resourceMeta, type DecisionRecord, type ResourceKey } from '../../pages/__stubs__/gameAdapter'
+import { resourceMeta, type DecisionRecord, type ResourceKey } from '../../game/uiAdapter'
 
 const deltaText = (record: DecisionRecord) => {
   const entries = Object.entries(record.deltaApplied) as [ResourceKey, number][]

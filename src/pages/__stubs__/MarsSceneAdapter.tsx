@@ -1,4 +1,4 @@
-import type { HotspotId, LevelId, SceneStatus } from './gameAdapter'
+import type { HotspotId, LevelId, SceneStatus } from '../../game/uiAdapter'
 import type { AvatarId } from './avatarAdapter'
 
 export interface MarsSceneProps {

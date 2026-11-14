@@ -1,4 +1,4 @@
-import { resourceMeta, type ResourceKey } from '../../pages/__stubs__/gameAdapter'
+import { resourceMeta, type ResourceKey } from '../../game/uiAdapter'
 
 interface ResourceBarProps {
   resourceKey: ResourceKey
