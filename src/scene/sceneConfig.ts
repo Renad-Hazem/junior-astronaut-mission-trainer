@@ -116,10 +116,17 @@ function generateRocks(): RockLayout[] {
 
 export const ROCKS: readonly RockLayout[] = generateRocks();
 
+/** Major decorative structures that have solid collision footprints. */
+export const DECORATIVE_OBSTACLES: readonly CircleObstacle[] = [
+  // Rocket hull at landing zone center
+  { x: -4, z: -10, radius: 0.9 },
+];
+
 /** Every solid footprint the player cannot walk through. */
 export const OBSTACLES: readonly CircleObstacle[] = [
   ...HOTSPOTS.map((h) => ({ x: h.x, z: h.z, radius: h.radius })),
   ...ROCKS.map((r) => ({ x: r.x, z: r.z, radius: r.scale * 0.8 })),
+  ...DECORATIVE_OBSTACLES,
 ];
 
 // ---------------------------------------------------------------------------
