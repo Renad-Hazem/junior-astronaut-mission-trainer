@@ -155,7 +155,7 @@ export const KNOWLEDGE: KnowledgeDoc[] = [
   "title": "How Programs Ask DONKI for Data (the DONKI API)",
   "source": "NASA CCMC DONKI-API version 2.0",
   "url": "https://ccmc.gsfc.nasa.gov/DONKI/api/",
-  "text": "The DONKI API lets a computer program ask for space weather events. A request starts with https://ccmc.gsfc.nasa.gov/DONKI-API/get/ followed by an event type: FLR, CME, CMEAnalysis, GST, SEP, IPS, MPC, RBE, HSS, notifications or WSAEnlilSimulations. You add a startDate and an endDate written like 2026-11-14. If you leave the dates out, most searches cover the last 30 days and notifications cover the last 7. One request can cover at most 60 days. Flares can be filtered by class and CMEs by speed. The same data is also offered through api.nasa.gov. AstroBot uses this API to answer questions about what the Sun is doing right now."
+  "text": "The DONKI API lets a computer program ask for space weather events. A request starts with https://ccmc.gsfc.nasa.gov/DONKI-API/get/ followed by an event type: FLR, CME, CMEAnalysis, GST, SEP, IPS, MPC, RBE, HSS, notifications or WSAEnlilSimulations. You add a startDate and an endDate written like 2026-11-14. If you leave the dates out, most searches cover the last 30 days and notifications cover the last 7. One request can cover at most 60 days. Flares can be filtered by class and CMEs by speed. The same data is also offered through api.nasa.gov. This game answers with saved historical snapshots from that catalog, not live current Sun data."
  },
  {
   "title": "CMEs and Solar Energetic Particles",
@@ -449,25 +449,25 @@ export const KNOWLEDGE: KnowledgeDoc[] = [
   "title": "Recent Coronal Mass Ejections (saved snapshot)",
   "source": "NASA CCMC DONKI Coronal Mass Ejection (CME)",
   "url": "https://ccmc.gsfc.nasa.gov/DONKI/",
-  "text": "Recent coronal mass ejections, as of 14 November 2026. In the 30 days before that date NASA's DONKI database logged 85 coronal mass ejections (the fastest moved 1,048 km/s on 17 October). 1 of them was faster than 1,000 km/s, which scientists call a fast CME. A coronal mass ejection (CME) is a huge cloud of hot gas and magnetic field thrown out by the Sun. Most CMEs miss Earth, Moon and Mars. This is a saved snapshot, so ask about space weather 'right now' to get live numbers."
+  "text": "Recent coronal mass ejections, as of 14 November 2026. In the 30 days before that date NASA's DONKI database logged 85 coronal mass ejections (the fastest moved 1,048 km/s on 17 October). 1 of them was faster than 1,000 km/s, which scientists call a fast CME. A coronal mass ejection (CME) is a huge cloud of hot gas and magnetic field thrown out by the Sun. Most CMEs miss Earth, Moon and Mars. This is a saved historical snapshot and does not describe current conditions."
  },
  {
   "title": "Recent Solar Flares (saved snapshot)",
   "source": "NASA CCMC DONKI Solar Flare (FLR)",
   "url": "https://ccmc.gsfc.nasa.gov/DONKI/",
-  "text": "Recent solar flares, as of 14 November 2026. In the 30 days before that date NASA's DONKI database logged 13 solar flares (the strongest was class M3.5 on 5 November). By class there were 0 X-class, 10 M-class and 3 C-class flares. The strongest ones were: M3.5 on 5 November; M1.9 on 7 November; M1.7 on 8 November; M1.7 on 11 November; M1.6 on 19 October; M1.4 on 7 November. X-class flares are the strongest, M-class are medium and C-class are small. This is a saved snapshot, so ask about space weather 'right now' to get live numbers."
+  "text": "Recent solar flares, as of 14 November 2026. In the 30 days before that date NASA's DONKI database logged 13 solar flares (the strongest was class M3.5 on 5 November). By class there were 0 X-class, 10 M-class and 3 C-class flares. The strongest ones were: M3.5 on 5 November; M1.9 on 7 November; M1.7 on 8 November; M1.7 on 11 November; M1.6 on 19 October; M1.4 on 7 November. X-class flares are the strongest, M-class are medium and C-class are small. This is a saved historical snapshot and does not describe current conditions."
  },
  {
   "title": "Recent Geomagnetic and Radiation Storms (saved snapshot)",
   "source": "NASA CCMC DONKI (GST, SEP, IPS, RBE, HSS, MPC)",
   "url": "https://ccmc.gsfc.nasa.gov/DONKI/",
-  "text": "Recent space storms, as of 14 November 2026. In the 30 days before that date NASA's DONKI database logged 1 geomagnetic storm (the biggest reached Kp 6 on 31 October). It also logged 0 solar particle storms, 2 interplanetary shocks, 5 radiation belt enhancements, 7 high speed streams, 0 magnetopause crossings. A geomagnetic storm happens when the solar wind shakes Earth's magnetic field; a Kp of 5 or more counts as a storm and can make auroras. Solar particle storms are the ones that raise radiation for astronauts. This is a saved snapshot, so ask about space weather 'right now' to get live numbers."
+  "text": "Recent space storms, as of 14 November 2026. In the 30 days before that date NASA's DONKI database logged 1 geomagnetic storm (the biggest reached Kp 6 on 31 October). It also logged 0 solar particle storms, 2 interplanetary shocks, 5 radiation belt enhancements, 7 high speed streams, 0 magnetopause crossings. A geomagnetic storm happens when the solar wind shakes Earth's magnetic field; a Kp of 5 or more counts as a storm and can make auroras. Solar particle storms are the ones that raise radiation for astronauts. This is a saved historical snapshot and does not describe current conditions."
  },
  {
-  "title": "Asteroids Passing Earth This Week (saved snapshot)",
+  "title": "Asteroids Passing Earth (saved snapshot, week of 14 November 2026)",
   "source": "NASA Asteroids NeoWs (Near Earth Object Web Service)",
   "url": "https://api.nasa.gov/",
-  "text": "Near-Earth asteroids, as of 14 November 2026. NASA's NeoWs service lists 34 near-Earth asteroids passing Earth in the 7 days starting on that date. The closest is 2018 NE1, passing 6,385,660 km away on 19 November (about 16.6 times the distance to the Moon). It is roughly 56 to 124 meters wide. 3 asteroids on the list are flagged 'potentially hazardous', a label for big asteroids whose orbits come near Earth's orbit. None of these passes is a collision warning. The data comes from NASA JPL's asteroid team."
+  "text": "Near-Earth asteroids, as of 14 November 2026. NASA's NeoWs service lists 34 near-Earth asteroids passing Earth in the 7 days starting on that date. The closest is 2018 NE1, passing 6,385,660 km away on 19 November (about 16.6 times the distance to the Moon). It is roughly 56 to 124 meters wide. 3 asteroids on the list are flagged 'potentially hazardous', a label for big asteroids whose orbits come near Earth's orbit. None of these passes is a collision warning. This is a saved historical snapshot and does not describe current conditions. The data comes from NASA JPL's asteroid team."
  },
  {
   "title": "How Many Studies Are in NASA OSDR (saved snapshot)",

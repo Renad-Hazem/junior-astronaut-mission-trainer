@@ -302,7 +302,7 @@ export function AstroChatbot({
               <button
                 type="button"
                 className="astro-chip"
-                onClick={() => handleSend('What is the Sun doing right now?')}
+                onClick={() => handleSend('What are solar flares and coronal mass ejections?')}
               >
                 ☀️ Solar Storms
               </button>
@@ -337,9 +337,9 @@ export function AstroChatbot({
               <button
                 type="button"
                 className="astro-chip"
-                onClick={() => handleSend('What is the Sun doing right now?')}
+                onClick={() => handleSend('What do saved NASA solar activity snapshots show?')}
               >
-                ☀️ Live Solar Activity
+                ☀️ Saved Solar Activity
               </button>
               <button
                 type="button"
@@ -382,7 +382,7 @@ export function AstroChatbot({
                 </div>
                 <p className="astro-message-text">{msg.text}</p>
 
-                {/* Bot Grounded Citations & Jargon */}
+                {/* Bot citations and science terms */}
                 {msg.responseDetails && (
                   <div className="astro-message-extra">
                     {msg.responseDetails.jargon.length > 0 && (
@@ -401,7 +401,7 @@ export function AstroChatbot({
                     {msg.responseDetails.sources.length > 0 && (
                       <div className="astro-sources-box">
                         <span className="astro-extra-title">
-                          📡 {msg.responseDetails.live ? 'CONNECTED SOURCE RESPONSE' : 'CURATED OFFLINE SOURCE'}
+                          📚 SOURCES PROVIDED
                         </span>
                         <div className="astro-sources-list">
                           {msg.responseDetails.sources.map((src, i) => (

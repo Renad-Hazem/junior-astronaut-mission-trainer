@@ -10,7 +10,7 @@ export const SCIENCE_FACTS: Record<string, ScienceFact> = {
     summary:
       'Mars has a thin atmosphere made of about 95% carbon dioxide (CO₂), which humans cannot breathe. NASA’s MOXIE experiment on the Perseverance rover demonstrated how electricity and heat can split CO₂ molecules to produce pure breathable oxygen on Mars.',
     sourceLabel: 'NASA Mars Exploration — MOXIE Oxygen Experiment',
-    url: 'https://science.nasa.gov/mission/mars-2020-perseverance/moxie/',
+    url: 'https://www.nasa.gov/space-technology-mission-directorate/tdm/mars-oxygen-in-situ-resource-utilization-experiment-moxie/',
     simulationDisclaimer: SIMULATION_DISCLAIMER,
   },
   'NASA-ECLSS': {
@@ -28,7 +28,7 @@ export const SCIENCE_FACTS: Record<string, ScienceFact> = {
     summary:
       'Regional and global dust storms on Mars lift fine iron-oxide dust high into the atmosphere, blocking sunlight from reaching solar panels for weeks—as experienced by NASA’s Opportunity rover and InSight lander.',
     sourceLabel: 'NASA Mars Exploration — Dust Storms & Solar Power',
-    url: 'https://science.nasa.gov/planetary-science/focus-areas/mars/',
+    url: 'https://science.nasa.gov/helio-and-you-seasons-on-earth-mars-and-beyond/',
     simulationDisclaimer: SIMULATION_DISCLAIMER,
   },
   'NASA-RADIATION': {
@@ -55,7 +55,7 @@ export const SCIENCE_FACTS: Record<string, ScienceFact> = {
     summary:
       'Space crop systems use controlled LED lighting and closed-loop water delivery to grow fresh food while plants absorb carbon dioxide and release oxygen—requiring careful balance of water and electrical energy.',
     sourceLabel: 'NASA Veggie & Space Crop Production Research',
-    url: 'https://www.nasa.gov/missions/station/iss-research/veggie-plant-growth-system-on-international-space-station/',
+    url: 'https://science.nasa.gov/mission/veggie/',
     simulationDisclaimer: SIMULATION_DISCLAIMER,
   },
 };

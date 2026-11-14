@@ -10,7 +10,9 @@ import { Canvas } from "@react-three/fiber";
 import { OrthographicCamera } from "@react-three/drei";
 import type { HotspotId, LevelId, SceneStatus } from "../game/types";
 import MarsBase from "./MarsBase";
+import MarsEnvironment from "./MarsEnvironment";
 import MarsTerrain from "./MarsTerrain";
+import MarsTerrainDetails from "./MarsTerrainDetails";
 import PlayerRig from "./PlayerRig";
 import SceneAtmosphere from "./SceneAtmosphere";
 import SceneErrorBoundary from "./SceneErrorBoundary";
@@ -34,6 +36,7 @@ export interface MarsSceneProps {
   onInspect?: (hotspotId: HotspotId) => void;
   reducedMotion?: boolean;
   inputLocked?: boolean;
+  onMovementChange?: (moving: boolean) => void;
 }
 
 const containerStyle: CSSProperties = {
@@ -98,6 +101,7 @@ export default function MarsScene({
   onInspect,
   reducedMotion = false,
   inputLocked = false,
+  onMovementChange,
 }: MarsSceneProps) {
   const [webGLAvailable] = useState(detectWebGL);
   const [nearby, setNearby] = useState<HotspotId | null>(null);
@@ -186,6 +190,8 @@ export default function MarsScene({
           />
           <SceneAtmosphere status={status} reducedMotion={reducedMotion} />
           <MarsTerrain />
+          <MarsTerrainDetails reducedMotion={reducedMotion} />
+          <MarsEnvironment reducedMotion={reducedMotion} />
           <MarsBase
             status={status}
             highlightedHotspot={highlightedHotspot}
@@ -201,6 +207,7 @@ export default function MarsScene({
             inputLocked={inputLocked}
             inputs={inputs}
             onNearbyChange={handleNearbyChange}
+            onMovementChange={onMovementChange}
           />
         </Canvas>
       </SceneErrorBoundary>
