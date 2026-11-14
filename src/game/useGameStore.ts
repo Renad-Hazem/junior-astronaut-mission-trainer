@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
 import type {
   ChoiceRecord,
   GameStore,
@@ -6,7 +7,7 @@ import type {
   MissionLevel,
   Resources,
 } from './types';
-import { MISSION_LEVELS, getMissionLevelById } from '../data/levels';
+import { getMissionLevelById } from '../data/levels';
 import {
   ALL_RESOURCE_KEYS,
   RESOURCE_LABELS,
@@ -16,6 +17,17 @@ import {
   hasExhaustedResource,
 } from './resourceEngine';
 import { buildMissionBrief } from './briefBuilder';
+import {
+  isLevelUnlocked,
+  sanitizeCompletedLevelIds,
+} from './progression';
+
+export const GAME_PROGRESS_STORAGE_KEY = 'mars-base:game-progress:v1';
+export const GAME_PROGRESS_STORAGE_VERSION = 1;
+
+interface PersistedGameProgress {
+  completedLevelIds: GameStore['completedLevelIds'];
+}
 
 const DEFAULT_RESOURCES: Resources = {
   oxygen: 78,
@@ -61,7 +73,7 @@ function createInitialLevelState(level: MissionLevel) {
   };
 }
 
-export const useGameStore = create<GameStore>((set, get) => ({
+export const useGameStore = create<GameStore>()(persist<GameStore, [], [], PersistedGameProgress>((set, get) => ({
   selectedLevelId: null,
   currentLevel: null,
   resources: { ...DEFAULT_RESOURCES },
@@ -76,7 +88,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
   completedLevelIds: [],
 
   selectLevel: (levelId: string) => {
-    const level = getMissionLevelById(levelId) ?? MISSION_LEVELS[0];
+    const level = getMissionLevelById(levelId);
+    if (!level || !isLevelUnlocked(level.id, get().completedLevelIds)) return;
+
     set({
       ...createInitialLevelState(level),
     });
@@ -149,7 +163,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
         choiceHistory: nextHistory,
         activeWarnings: warnings,
         isStabilizationTriggered: true,
-        isMissionComplete: true,
+        // Preserve the final consequence until an explicit Continue opens the brief.
+        isMissionComplete: false,
         missionBrief: brief,
       });
       return;
@@ -173,9 +188,18 @@ export const useGameStore = create<GameStore>((set, get) => ({
       resources,
       choiceHistory,
       completedLevelIds,
+      isStabilizationTriggered,
+      isMissionComplete,
+      missionBrief,
     } = state;
 
-    if (!currentLevel || !resolvedChoiceForCurrentEvent) {
+    if (!currentLevel || !resolvedChoiceForCurrentEvent || isMissionComplete) {
+      return;
+    }
+
+    if (isStabilizationTriggered) {
+      if (!missionBrief) return;
+      set({ isMissionComplete: true });
       return;
     }
 
@@ -191,9 +215,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }
 
     const brief = buildMissionBrief(currentLevel, resources, choiceHistory);
-    const updatedCompleted = completedLevelIds.includes(currentLevel.id)
-      ? completedLevelIds
-      : [...completedLevelIds, currentLevel.id];
+    const updatedCompleted = sanitizeCompletedLevelIds([
+      ...completedLevelIds,
+      currentLevel.id,
+    ]);
 
     set({
       isMissionComplete: true,
@@ -224,5 +249,22 @@ export const useGameStore = create<GameStore>((set, get) => ({
     set({
       ...createInitialLevelState(currentLevel),
     });
+  },
+}), {
+  name: GAME_PROGRESS_STORAGE_KEY,
+  version: GAME_PROGRESS_STORAGE_VERSION,
+  storage: createJSONStorage<PersistedGameProgress>(() => localStorage),
+  partialize: (state) => ({
+    completedLevelIds: sanitizeCompletedLevelIds(state.completedLevelIds),
+  }),
+  migrate: () => ({ completedLevelIds: [] }),
+  merge: (persistedState, currentState) => {
+    const persistedProgress = persistedState as Partial<PersistedGameProgress> | undefined;
+    return {
+      ...currentState,
+      completedLevelIds: sanitizeCompletedLevelIds(
+        persistedProgress?.completedLevelIds,
+      ),
+    };
   },
 }));

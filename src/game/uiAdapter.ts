@@ -4,6 +4,7 @@ import { create } from "zustand";
 import { useGameStore as useEngineStore } from "./useGameStore";
 import { MISSION_LEVELS } from "../data/levels";
 import { SCIENCE_FACTS } from "../science/scienceFacts";
+import { isLevelUnlocked } from "./progression";
 
 import type {
   MissionLevel as EngineLevel,
@@ -217,17 +218,7 @@ const mapReport = (report: MissionBriefReport | null): MissionReport | null => {
   };
 };
 
-const isUnlocked = (id: LevelId, completedLevelIds: readonly LevelId[]) => {
-  const level = missionLevels.find((item) => item.id === id);
-  if (!level) return false;
-  if (level.order === 1 || completedLevelIds.includes(id)) return true;
-
-  const previous = missionLevels.find((item) => item.order === level.order - 1);
-
-  return previous ? completedLevelIds.includes(previous.id) : false;
-};
-
-export const isLevelUnlocked = isUnlocked;
+export { isLevelUnlocked };
 
 interface AdapterState {
   screen: ScreenId;
@@ -270,7 +261,7 @@ export function useGameStore<T>(selector: (state: AdapterState) => T): T {
       selectLevel: (id) => {
         const completed = useEngineStore.getState().completedLevelIds;
 
-        if (!isUnlocked(id, completed)) return;
+        if (!isLevelUnlocked(id, completed)) return;
 
         engine.selectLevel(id);
         useNavigationStore.setState({ screen: "gameplay" });
