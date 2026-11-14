@@ -55,7 +55,9 @@ export const SOUND_REGISTRY: Readonly<Record<SoundId, SoundDefinition>> = {
   },
   'proximity-scanner': sfx('proximity-scanner', 'Astronaut comes within interaction range of a system', 900, 1, 0.8),
   'inspect-system': sfx('inspect-system', 'Inspect System button or E key', 250, 1, 1),
-  'decision-select': sfx('decision-select', 'A mission decision is recorded', 300, 1, 1),
+  // Triggered by engine transitions, which the engine already de-duplicates (one per decision),
+  // so only a short burst guard: a long cooldown would drop legitimate quick decisions.
+  'decision-select': sfx('decision-select', 'A mission decision is recorded', 120, 2, 1),
   'resource-warning': sfx('resource-warning', 'A decision drops a resource below the warning threshold (30)', 2_000, 1, 0.9),
   'mission-complete': sfx('mission-complete', 'Mission completes normally', 3_000, 1, 1),
   stabilization: sfx('stabilization', 'Support team stabilization protocol starts (a resource reached 0)', 3_000, 1, 1),

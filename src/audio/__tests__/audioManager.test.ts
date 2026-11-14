@@ -95,14 +95,24 @@ describe('duplicate prevention', () => {
     await unlocked(m);
     let started = 0;
     const first = sourcesFrom(() => {
-      for (let i = 0; i < 10; i += 1) if (m.play('decision-select')) started += 1;
+      for (let i = 0; i < 10; i += 1) if (m.play('inspect-system')) started += 1;
     });
     expect(started).toBe(1);
-    clock += 400; // past the 300 ms cooldown…
-    expect(m.play('decision-select')).toBe(false); // …but the first voice is still sounding (cap 1)
+    clock += 300; // past the 250 ms cooldown…
+    expect(m.play('inspect-system')).toBe(false); // …but the first voice is still sounding (cap 1)
     finishAll(first);
+    expect(m.play('inspect-system')).toBe(true);
+    expect(m.getDebugStats().suppressedCounts['inspect-system']).toBe(10);
+  });
+
+  it('two genuine decisions 150 ms apart both get their cue (engine already de-duplicates clicks)', async () => {
+    const m = makeManager();
+    await unlocked(m);
     expect(m.play('decision-select')).toBe(true);
-    expect(m.getDebugStats().suppressedCounts['decision-select']).toBe(10);
+    clock += 150; // first cue still sounding
+    expect(m.play('decision-select')).toBe(true);
+    clock += 50;
+    expect(m.play('decision-select')).toBe(false); // burst guard (120 ms) still applies
   });
 
   it('caps simultaneous voices per sound', async () => {
