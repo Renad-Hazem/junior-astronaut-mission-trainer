@@ -69,12 +69,12 @@ export default function SceneHotspot({
   const alertRingRef = useRef<Mesh>(null);
 
   useEffect(() => {
-    if (!hovered) return;
+    if (!hovered || !isNearby) return;
     document.body.style.cursor = 'pointer';
     return () => {
       document.body.style.cursor = '';
     };
-  }, [hovered]);
+  }, [hovered, isNearby]);
 
   useFrame((state) => {
     const t = state.clock.elapsedTime;
@@ -92,6 +92,7 @@ export default function SceneHotspot({
 
   const handleClick = (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation();
+    if (!isNearby) return;
     onInspect(layout.id);
   };
   const handleOver = (event: ThreeEvent<PointerEvent>) => {
