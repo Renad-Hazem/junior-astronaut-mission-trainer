@@ -2,7 +2,8 @@ import { useMemo } from "react";
 import { create } from "zustand";
 
 import { useGameStore as useEngineStore } from "./useGameStore";
-import { MISSION_LEVELS } from "../data/levels";
+import { BONUS_MISSION_LEVEL, MISSION_LEVELS } from "../data/levels";
+import { BONUS_MISSION_05_ID } from "../data/nasa/bonusMission05";
 import { SCIENCE_FACTS } from "../science/scienceFacts";
 import { isLevelUnlocked } from "./progression";
 
@@ -80,6 +81,7 @@ export interface MissionReport {
   status: "reviewed" | "stabilized" | "support-needed";
   scienceFactIds: string[];
   suggestion: string;
+  planningScore: number;
 }
 
 export interface ScienceFact {
@@ -124,6 +126,18 @@ export const missionLevels: MissionLevel[] = MISSION_LEVELS.map((level) => ({
   events: level.events.map(mapEvent),
   estimatedMinutes: toMinutes(level.estimatedMinutes),
 }));
+
+export const bonusMission: MissionLevel = {
+  id: BONUS_MISSION_LEVEL.id,
+  order: BONUS_MISSION_LEVEL.levelNumber,
+  title: BONUS_MISSION_LEVEL.title,
+  difficulty: BONUS_MISSION_LEVEL.difficulty,
+  objective: BONUS_MISSION_LEVEL.learningObjectives.join(" "),
+  storyIntro: BONUS_MISSION_LEVEL.story,
+  initialResources: BONUS_MISSION_LEVEL.initialResources,
+  events: BONUS_MISSION_LEVEL.events.map(mapEvent),
+  estimatedMinutes: toMinutes(BONUS_MISSION_LEVEL.estimatedMinutes),
+};
 
 export const scienceFacts: Record<string, ScienceFact> = Object.fromEntries(
   Object.entries(SCIENCE_FACTS).map(([id, fact]) => [
@@ -215,6 +229,7 @@ const mapReport = (report: MissionBriefReport | null): MissionReport | null => {
           : "support-needed",
     scienceFactIds: report.scienceFacts.map((fact) => fact.id),
     suggestion: report.tryNextTime,
+    planningScore: report.planningScore,
   };
 };
 
@@ -231,6 +246,7 @@ interface AdapterState {
   isAwaitingContinue: boolean;
   currentReport: MissionReport | null;
   completedLevelIds: LevelId[];
+  completedBonusMissionIds: LevelId[];
   selectLevel: (id: LevelId) => void;
   chooseOption: (id: string) => void;
   continueMission: () => void;
@@ -257,11 +273,12 @@ export function useGameStore<T>(selector: (state: AdapterState) => T): T {
       isAwaitingContinue: Boolean(currentDecision && !engine.isMissionComplete),
       currentReport: mapReport(engine.missionBrief),
       completedLevelIds: engine.completedLevelIds,
+      completedBonusMissionIds: engine.completedBonusMissionIds,
 
       selectLevel: (id) => {
         const completed = useEngineStore.getState().completedLevelIds;
 
-        if (!isLevelUnlocked(id, completed)) return;
+        if (id !== BONUS_MISSION_05_ID && !isLevelUnlocked(id, completed)) return;
 
         engine.selectLevel(id);
         useNavigationStore.setState({ screen: "gameplay" });

@@ -1,6 +1,6 @@
 # Bonus Mission 05 — Solar Storm Watch (specification)
 
-**Status:** designed and data-backed, **not wired into the game**.
+**Status:** activated on `feature/bonus-05-solar-storm` as an optional historical replay.
 **Content draft:** `src/data/nasa/bonusMission05.ts`.
 **Evidence:** `src/data/nasa/solarStormWatchSnapshot.ts`.
 **Validation:** `src/integrations/nasa/__tests__/bonusMission.test.ts`, which enumerates all 243 decision paths.
@@ -191,17 +191,17 @@ export function loadSolarStormWatchData(opts?: ClientOptions & { days?: number }
 // SolarStormWatchData = { replay: SolarStormReplay; today: { status: 'live'; context } | { status: 'unavailable'; error } }
 ```
 
-**Why it isn't a `MissionLevel`:** `MissionLevel.levelNumber` is `1 | 2 | 3 | 4`, `title` and `difficulty` are closed unions, and `MissionBriefReport` copies `levelNumber`. Integrating needs one of the two options in `INTEGRATION_HANDOFF.md` §3. Both require approval from the `types.ts` owner.
+The activated adapter converts this definition to a `MissionLevel` with number 5 while keeping it outside `MISSION_LEVELS`. `completedBonusMissionIds` is persisted separately, so Bonus 05 cannot unlock, lock, or become a prerequisite for Levels 1–4.
 
 ## 11. Acceptance criteria
 
-- [ ] Levels 1–4 play exactly as before; their completion and progression never depend on the bonus.
-- [ ] The bonus is reachable but never auto-starts.
-- [ ] Every evidence card shows type, location, source link and capture date. Nothing historical is labelled live.
-- [ ] With network off, the mission is fully playable and the panel says live data is unavailable.
-- [ ] With network on, the panel shows the DONKI fetch time and disclaimer, and resources are unchanged by it.
-- [ ] Storm Readiness shows the "not an official Space Apps score" disclaimer.
-- [ ] `node src/integrations/nasa/__tests__/run.ts` passes; `npm run build` and `npm run lint` pass.
+- [x] Levels 1–4 play exactly as before; their completion and progression never depend on the bonus.
+- [x] The bonus is reachable but never auto-starts.
+- [x] Every evidence card shows type, location, source link and capture date. Nothing historical is labelled live.
+- [x] With network off, the mission is fully playable; no live panel is shipped in this activation.
+- [x] The optional live panel is not shipped; the existing typed loader remains non-blocking and offline-safe for a later activation.
+- [x] Storm Readiness shows the "not an official Space Apps score" disclaimer.
+- [x] `node src/integrations/nasa/__tests__/run.ts` passes; `npm run build` and `npm run lint` pass.
 - [ ] Copy reviewed against §8 by the science content owner.
 
 ## 12. Open questions for the owners

@@ -8,6 +8,7 @@ import type {
   Resources,
 } from './types';
 import { getMissionLevelById } from '../data/levels';
+import { BONUS_MISSION_05_ID } from '../data/nasa/bonusMission05';
 import {
   ALL_RESOURCE_KEYS,
   RESOURCE_LABELS,
@@ -23,10 +24,17 @@ import {
 } from './progression';
 
 export const GAME_PROGRESS_STORAGE_KEY = 'mars-base:game-progress:v1';
-export const GAME_PROGRESS_STORAGE_VERSION = 1;
+export const GAME_PROGRESS_STORAGE_VERSION = 2;
 
 interface PersistedGameProgress {
   completedLevelIds: GameStore['completedLevelIds'];
+  completedBonusMissionIds: GameStore['completedBonusMissionIds'];
+}
+
+function sanitizeCompletedBonusMissionIds(value: unknown): GameStore['completedBonusMissionIds'] {
+  return Array.isArray(value) && value.includes(BONUS_MISSION_05_ID)
+    ? [BONUS_MISSION_05_ID]
+    : [];
 }
 
 const DEFAULT_RESOURCES: Resources = {
@@ -86,10 +94,12 @@ export const useGameStore = create<GameStore>()(persist<GameStore, [], [], Persi
   isMissionComplete: false,
   missionBrief: null,
   completedLevelIds: [],
+  completedBonusMissionIds: [],
 
   selectLevel: (levelId: string) => {
     const level = getMissionLevelById(levelId);
-    if (!level || !isLevelUnlocked(level.id, get().completedLevelIds)) return;
+    const isBonus = levelId === BONUS_MISSION_05_ID;
+    if (!level || (!isBonus && !isLevelUnlocked(level.id, get().completedLevelIds))) return;
 
     set({
       ...createInitialLevelState(level),
@@ -188,6 +198,7 @@ export const useGameStore = create<GameStore>()(persist<GameStore, [], [], Persi
       resources,
       choiceHistory,
       completedLevelIds,
+      completedBonusMissionIds,
       isStabilizationTriggered,
       isMissionComplete,
       missionBrief,
@@ -215,16 +226,20 @@ export const useGameStore = create<GameStore>()(persist<GameStore, [], [], Persi
     }
 
     const brief = buildMissionBrief(currentLevel, resources, choiceHistory);
-    const updatedCompleted = sanitizeCompletedLevelIds([
-      ...completedLevelIds,
-      currentLevel.id,
-    ]);
+    const isBonus = currentLevel.id === BONUS_MISSION_05_ID;
+    const updatedCompleted = isBonus
+      ? completedLevelIds
+      : sanitizeCompletedLevelIds([...completedLevelIds, currentLevel.id]);
+    const updatedBonusCompleted = isBonus
+      ? sanitizeCompletedBonusMissionIds([...completedBonusMissionIds, currentLevel.id])
+      : completedBonusMissionIds;
 
     set({
       isMissionComplete: true,
       sceneStatus: 'restored',
       missionBrief: brief,
       completedLevelIds: updatedCompleted,
+      completedBonusMissionIds: updatedBonusCompleted,
     });
   },
 
@@ -256,14 +271,27 @@ export const useGameStore = create<GameStore>()(persist<GameStore, [], [], Persi
   storage: createJSONStorage<PersistedGameProgress>(() => localStorage),
   partialize: (state) => ({
     completedLevelIds: sanitizeCompletedLevelIds(state.completedLevelIds),
+    completedBonusMissionIds: sanitizeCompletedBonusMissionIds(state.completedBonusMissionIds),
   }),
-  migrate: () => ({ completedLevelIds: [] }),
+  migrate: (persistedState, version) => {
+    const progress = persistedState as Partial<PersistedGameProgress> | undefined;
+    if (version === 1) {
+      return {
+        completedLevelIds: sanitizeCompletedLevelIds(progress?.completedLevelIds),
+        completedBonusMissionIds: [],
+      };
+    }
+    return { completedLevelIds: [], completedBonusMissionIds: [] };
+  },
   merge: (persistedState, currentState) => {
     const persistedProgress = persistedState as Partial<PersistedGameProgress> | undefined;
     return {
       ...currentState,
       completedLevelIds: sanitizeCompletedLevelIds(
         persistedProgress?.completedLevelIds,
+      ),
+      completedBonusMissionIds: sanitizeCompletedBonusMissionIds(
+        persistedProgress?.completedBonusMissionIds,
       ),
     };
   },

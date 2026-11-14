@@ -3,7 +3,16 @@
 **For:** the integration owner (Renad), the data/game/science owner (Malak) and the UI owner (Mohamed). Ownership follows `02_TECHNICAL_CONTRACTS.md` §2.
 **Branch:** `research/nasa-bonus-mission`, from `origin/main` @ `46c1b0bcf84e9b0df596ff09158ef7a612b3b839`.
 
-**State:** isolated and inert. Nothing in the running game imports the new code. `npm run build` produces a **byte-identical bundle** to `main` (same `index-BDYx9fsN.js`, 613 modules).
+**State:** Bonus Mission 05 is activated on `feature/bonus-05-solar-storm`. The historical snapshot is lazy-loaded by the evidence UI; no live network request is required to play.
+
+## Activation update (2026-11-14)
+
+- Option B was implemented: Bonus 05 is converted to a playable `MissionLevel` but remains outside canonical `MISSION_LEVELS`.
+- The Mission Library presents a separate, always-available Bonus card.
+- Completion persists in `completedBonusMissionIds`; canonical `completedLevelIds` still contains only the consecutive Level 1–4 campaign.
+- Gameplay displays a May 2024 historical-replay label and evidence after each decision.
+- The Mission Brief retains all five decisions, shows the collected evidence and includes the non-official Storm Readiness disclaimer.
+- The optional live DONKI panel is intentionally not shipped in this activation. Historical data is never presented as current.
 
 ---
 

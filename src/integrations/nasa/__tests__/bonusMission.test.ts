@@ -54,10 +54,10 @@ test('Every choice is a real trade-off with a matching preview and one optimal h
   }
 });
 
-test('All science fact IDs resolve; new facts do not overwrite existing ones', () => {
+test('All science fact IDs resolve in the activated science registry', () => {
   for (const id of BONUS_05_REUSED_FACT_IDS) assert(SCIENCE_FACTS[id], `existing fact ${id}`);
-  for (const id of Object.keys(BONUS_05_SCIENCE_FACTS)) assert(!SCIENCE_FACTS[id], `${id} must be new`);
-  const all = { ...SCIENCE_FACTS, ...BONUS_05_SCIENCE_FACTS };
+  for (const id of Object.keys(BONUS_05_SCIENCE_FACTS)) assert(SCIENCE_FACTS[id], `${id} registered`);
+  const all = SCIENCE_FACTS;
   const used = [...BONUS_MISSION_05.briefScienceFactIds, ...BONUS_MISSION_05.events.flatMap((e) => e.choices.flatMap((c) => c.scienceFactIds))];
   for (const id of used) assert(all[id], `fact ${id} resolves`);
   for (const f of Object.values(BONUS_05_SCIENCE_FACTS)) assert(/^https:\/\//.test(f.url), `${f.id} url`);

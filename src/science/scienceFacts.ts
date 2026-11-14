@@ -1,7 +1,8 @@
 import type { ScienceFact } from '../game/types';
+import { BONUS_05_SCIENCE_FACTS } from '../data/nasa/bonusMission05.ts';
+import { SIMULATION_DISCLAIMER } from './simulationDisclaimer.ts';
 
-export const SIMULATION_DISCLAIMER =
-  'In-game resource bars (0–100) are normalized educational indicators designed to show cause and effect, not physical measurements in kilograms or Celsius.';
+export { SIMULATION_DISCLAIMER } from './simulationDisclaimer.ts';
 
 export const SCIENCE_FACTS: Record<string, ScienceFact> = {
   'NASA-OXYGEN': {
@@ -58,6 +59,7 @@ export const SCIENCE_FACTS: Record<string, ScienceFact> = {
     url: 'https://science.nasa.gov/mission/veggie/',
     simulationDisclaimer: SIMULATION_DISCLAIMER,
   },
+  ...BONUS_05_SCIENCE_FACTS,
 };
 
 export function resolveScienceFacts(factIds: string[]): ScienceFact[] {

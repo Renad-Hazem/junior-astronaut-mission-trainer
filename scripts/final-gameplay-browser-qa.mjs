@@ -229,7 +229,48 @@ try {
   await enterLibrary()
 
   const freshLocks = await evaluate(`[...document.querySelectorAll('.card-button')].map(button=>button.disabled)`)
-  assert(JSON.stringify(freshLocks) === JSON.stringify([false, true, true, true]), `Fresh unlock state is wrong: ${JSON.stringify(freshLocks)}`)
+  assert(JSON.stringify(freshLocks) === JSON.stringify([false, true, true, true, false]), `Fresh unlock state is wrong: ${JSON.stringify(freshLocks)}`)
+  let bonusGameplayScreenshot
+  let bonusBriefScreenshot
+
+  // Bonus 05 is available on a fresh save, completes five decisions, and never unlocks Level 2.
+  await evaluate(`document.querySelectorAll('.card-button')[4].click()`)
+  await waitForSelector('.mars-scene canvas')
+  const bonusEventCount = await storeState('s.currentLevel.events.length')
+  assert(bonusEventCount === 5, `Bonus mission event count is ${bonusEventCount}`)
+  for (let eventIndex = 0; eventIndex < bonusEventCount; eventIndex += 1) {
+    await openCurrentDecision()
+    if (eventIndex === 0) {
+      const optimalIndex = await storeState(`s.currentLevel.events[s.currentEventIndex].choices.findIndex(choice=>choice.isOptimalHint)`)
+      await evaluate(`(()=>{const button=document.querySelectorAll('.decision-option')[${optimalIndex}];button.click();button.click();return true})()`)
+      await waitForSelector('.bonus-evidence-card')
+      const evidenceCopy = await evaluate(`document.querySelector('.bonus-evidence').textContent`)
+      assert(/Historical replay/i.test(evidenceCopy) && /fictional training values/i.test(evidenceCopy), 'Bonus evidence provenance labels are missing')
+      assert((await storeState('s.choiceHistory.length')) === 1, 'Bonus first decision applied more than once')
+      await evaluate(`(document.querySelector('.bonus-evidence').scrollIntoView({block:'start'}),true)`)
+      await wait(120)
+      bonusGameplayScreenshot = await screenshot('bonus-05-event-evidence')
+      await evaluate(`(()=>{const button=document.querySelector('.decision-continue');button.click();button.click();return true})()`)
+      await wait(180)
+    } else {
+      await chooseOptimalAndContinue()
+    }
+  }
+  await waitForSelector('.brief-page')
+  await waitForSelector('.bonus-evidence-card')
+  const bonusResult = await storeState(`({main:s.completedLevelIds,bonus:s.completedBonusMissionIds,history:s.choiceHistory.length})`)
+  assert(bonusResult.history === 5, 'Bonus Mission Brief did not retain all five events')
+  assert(bonusResult.main.length === 0 && bonusResult.bonus.length === 1, 'Bonus completion changed main progression')
+  assert(await evaluate(`/not an official NASA Space Apps Challenge score/i.test(document.body.textContent)`), 'Storm Readiness disclaimer is missing')
+  await evaluate(`(document.querySelector('.bonus-evidence').scrollIntoView({block:'start'}),true)`)
+  await wait(120)
+  bonusBriefScreenshot = await screenshot('bonus-05-mission-brief')
+  await evaluate(`[...document.querySelectorAll('.brief-actions button')].find(button=>button.textContent.includes('Mission Library')).click()`)
+  await waitForSelector('.mission-grid')
+  await reloadAndWait()
+  await waitForSelector('.hero-cta')
+  await enterLibrary()
+  assert(await evaluate(`/Completed.*Replay available/i.test(document.querySelector('.mission-card--bonus').textContent)`), 'Bonus completion did not persist after refresh')
 
   const startReply = await askLibraryBot('Start the mission')
   assert(/do not have enough source evidence/i.test(startReply.text), `Start/star false match: ${startReply.text}`)
@@ -369,7 +410,7 @@ try {
   await waitForSelector('.hero-cta')
   await enterLibrary()
   const corruptLocks = await evaluate(`[...document.querySelectorAll('.card-button')].map(button=>button.disabled)`)
-  assert(JSON.stringify(corruptLocks) === JSON.stringify([false, true, true, true]), 'Corrupt storage was not rejected safely')
+  assert(JSON.stringify(corruptLocks) === JSON.stringify([false, true, true, true, false]), 'Corrupt storage was not rejected safely')
 
   const desktopScreenshot = await screenshot('desktop-library')
   const viewportEvidence = []
@@ -379,7 +420,11 @@ try {
     await waitForSelector('.hero-cta')
     const overflow = await evaluate(`document.documentElement.scrollWidth > document.documentElement.clientWidth`)
     assert(!overflow, `${width}px layout has horizontal overflow`)
-    viewportEvidence.push({ width, height, screenshot: await screenshot(`${width}x${height}-home`) })
+    const homeScreenshot = await screenshot(`${width}x${height}-home`)
+    await enterLibrary()
+    const libraryOverflow = await evaluate(`document.documentElement.scrollWidth > document.documentElement.clientWidth`)
+    assert(!libraryOverflow, `${width}px mission library has horizontal overflow`)
+    viewportEvidence.push({ width, height, homeScreenshot, libraryScreenshot: await screenshot(`${width}x${height}-library`) })
   }
 
   assert(exceptions.length === 0, `Uncaught browser exceptions: ${exceptions.join('\n')}`)
@@ -388,6 +433,8 @@ try {
 
   console.log(JSON.stringify({
     matrix,
+    bonusGameplayScreenshot,
+    bonusBriefScreenshot,
     freshLocks,
     afterRefreshLocks,
     stabilizationPending,

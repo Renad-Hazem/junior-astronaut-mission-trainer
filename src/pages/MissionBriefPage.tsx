@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { ResourceBar } from "../components/ui/ResourceBar";
 import { ReportTimeline } from "../components/ui/ReportTimeline";
 import {
@@ -8,8 +9,14 @@ import {
   useGameStore,
   type ResourceKey,
 } from "../game/uiAdapter";
+import { BONUS_MISSION_05, BONUS_MISSION_05_ID } from "../data/nasa/bonusMission05";
 
 const resourceOrder = Object.keys(resourceMeta) as ResourceKey[];
+const BonusEvidenceCards = lazy(() =>
+  import("../components/ui/BonusEvidenceCards").then((module) => ({
+    default: module.BonusEvidenceCards,
+  })),
+);
 
 export function MissionBriefPage() {
   const report = useGameStore((state) => state.currentReport);
@@ -29,7 +36,8 @@ export function MissionBriefPage() {
   const currentIndex = missionLevels.findIndex(
     (level) => level.id === report.levelId,
   );
-  const nextLevel = missionLevels[currentIndex + 1];
+  const isBonus = report.levelId === BONUS_MISSION_05_ID;
+  const nextLevel = currentIndex >= 0 ? missionLevels[currentIndex + 1] : undefined;
   const nextLevelUnlocked = nextLevel
     ? isLevelUnlocked(nextLevel.id, completedLevelIds)
     : false;
@@ -59,7 +67,9 @@ export function MissionBriefPage() {
             </strong>
             <small>
               {report.status === "reviewed"
-                ? nextLevel
+                ? isBonus
+                  ? "Bonus replay complete. Your four-mission campaign progress is unchanged."
+                  : nextLevel
                   ? `Mission 0${nextLevel.order} is now ready to play.`
                   : "The four-mission training campaign is complete."
                 : report.status === "stabilized"
@@ -119,6 +129,25 @@ export function MissionBriefPage() {
             })}
           </div>
         </section>
+
+        {isBonus && (
+          <>
+            <Suspense fallback={<p className="bonus-evidence-loading">Loading historical evidence…</p>}>
+              <BonusEvidenceCards
+                eventIds={report.decisions.map((decision) => decision.eventId)}
+                heading="Evidence used across your five-event replay"
+              />
+            </Suspense>
+            <section className="strategy-card bonus-score-card" aria-label="Storm Readiness game score">
+              <span aria-hidden="true">☀</span>
+              <div>
+                <span className="section-kicker">STORM READINESS · GAME SCORE</span>
+                <h2>{report.planningScore} / 1000</h2>
+                <p>{BONUS_MISSION_05.scoring.disclaimer}</p>
+              </div>
+            </section>
+          </>
+        )}
 
         <section className="brief-section" aria-labelledby="timeline-title">
           <div className="section-heading">

@@ -12,7 +12,7 @@
  *   authored game mechanics.
  */
 import type { DecisionOption, HotspotId, MissionEvent, ResourceDelta, ResourceKey, Resources, SceneStatus, ScienceFact } from '../../game/types.ts';
-import { SIMULATION_DISCLAIMER } from '../../science/scienceFacts.ts';
+import { SIMULATION_DISCLAIMER } from '../../science/simulationDisclaimer.ts';
 import { NASA_SOURCES } from '../../integrations/nasa/sourceRegistry.ts';
 import { RECOMMENDED_CROP_STUDY } from './osdrPlantStudies.ts';
 

@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { MISSION_LEVELS } from '../data/levels';
+import { BONUS_MISSION_LEVEL, MISSION_LEVELS } from '../data/levels';
+import { BONUS_MISSION_05_ID } from '../data/nasa/bonusMission05';
 import { applyEffects, hasExhaustedResource } from './resourceEngine';
 import { isLevelUnlocked, sanitizeCompletedLevelIds } from './progression';
 import type { GameStore, LevelId, Resources } from './types';
@@ -183,6 +184,20 @@ describe('game store mission transitions', () => {
 });
 
 describe('progress persistence', () => {
+  it('migrates valid version-1 campaign progress without inventing bonus progress', async () => {
+    const storage = new MemoryStorage();
+    storage.setItem('mars-base:game-progress:v1', JSON.stringify({
+      version: 1,
+      state: { completedLevelIds: [MISSION_LEVELS[0].id] },
+    }));
+
+    const migrated = await loadFreshStore(storage);
+    expect(migrated.useGameStore.getState().completedLevelIds).toEqual([
+      MISSION_LEVELS[0].id,
+    ]);
+    expect(migrated.useGameStore.getState().completedBonusMissionIds).toEqual([]);
+  });
+
   it('persists only validated completion progress and restores it after reload', async () => {
     const storage = new MemoryStorage();
     const firstLoad = await loadFreshStore(storage);
@@ -193,7 +208,10 @@ describe('progress persistence', () => {
     expect(serialized).not.toBeNull();
     const parsed = JSON.parse(serialized ?? '{}');
     expect(parsed.version).toBe(firstLoad.GAME_PROGRESS_STORAGE_VERSION);
-    expect(parsed.state).toEqual({ completedLevelIds: [MISSION_LEVELS[0].id] });
+    expect(parsed.state).toEqual({
+      completedLevelIds: [MISSION_LEVELS[0].id],
+      completedBonusMissionIds: [],
+    });
 
     const secondLoad = await loadFreshStore(storage);
     expect(secondLoad.useGameStore.getState().completedLevelIds).toEqual([MISSION_LEVELS[0].id]);
@@ -226,5 +244,47 @@ describe('progress persistence', () => {
     }));
     const futureVersionLoad = await loadFreshStore(futureVersionStorage);
     expect(futureVersionLoad.useGameStore.getState().completedLevelIds).toEqual([]);
+  });
+});
+
+describe('optional Bonus Mission 05', () => {
+  it('is always selectable, resolves five events exactly once, and never changes campaign unlocks', async () => {
+    const { useGameStore } = await loadFreshStore();
+
+    expect(MISSION_LEVELS).toHaveLength(4);
+    expect(MISSION_LEVELS.some((level) => level.id === BONUS_MISSION_05_ID)).toBe(false);
+    expect(BONUS_MISSION_LEVEL.events).toHaveLength(5);
+    expect(useGameStore.getState().completedLevelIds).toEqual([]);
+
+    useGameStore.getState().selectLevel(BONUS_MISSION_05_ID);
+    expect(useGameStore.getState().selectedLevelId).toBe(BONUS_MISSION_05_ID);
+    completeActiveMission(useGameStore);
+
+    const completed = useGameStore.getState();
+    expect(completed.isMissionComplete).toBe(true);
+    expect(completed.choiceHistory).toHaveLength(5);
+    expect(completed.missionBrief?.choiceHistory).toHaveLength(5);
+    expect(completed.completedLevelIds).toEqual([]);
+    expect(completed.completedBonusMissionIds).toEqual([BONUS_MISSION_05_ID]);
+    expect(isLevelUnlocked(MISSION_LEVELS[1].id, completed.completedLevelIds)).toBe(false);
+  });
+
+  it('persists bonus completion independently and keeps replay idempotent', async () => {
+    const storage = new MemoryStorage();
+    const firstLoad = await loadFreshStore(storage);
+    firstLoad.useGameStore.getState().selectLevel(BONUS_MISSION_05_ID);
+    completeActiveMission(firstLoad.useGameStore);
+
+    const secondLoad = await loadFreshStore(storage);
+    expect(secondLoad.useGameStore.getState().completedBonusMissionIds).toEqual([
+      BONUS_MISSION_05_ID,
+    ]);
+    expect(secondLoad.useGameStore.getState().completedLevelIds).toEqual([]);
+
+    secondLoad.useGameStore.getState().selectLevel(BONUS_MISSION_05_ID);
+    secondLoad.useGameStore.getState().restartLevel();
+    expect(secondLoad.useGameStore.getState().completedBonusMissionIds).toEqual([
+      BONUS_MISSION_05_ID,
+    ]);
   });
 });
