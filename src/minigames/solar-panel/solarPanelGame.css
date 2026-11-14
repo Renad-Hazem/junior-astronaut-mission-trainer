@@ -1,0 +1,509 @@
+/* Solar Panel Dust Rescue — ASTER BASE Style */
+
+.solar-game-container {
+  position: relative;
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: clamp(1rem, 3vw, 1.75rem);
+  background: radial-gradient(circle at 50% 20%, #172042 0%, #080c1e 100%);
+  border: 1px solid rgba(85, 189, 235, 0.35);
+  border-radius: 24px;
+  color: #f8fafc;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45), 0 0 30px rgba(224, 123, 47, 0.12);
+  user-select: none;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* Header & HUD */
+.solar-game-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.solar-game-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.solar-game-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(224, 123, 47, 0.2);
+  border: 1px solid #e07b2f;
+  color: #ff9f43;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  width: fit-content;
+}
+
+.solar-game-title {
+  margin: 0;
+  font-size: clamp(1.2rem, 3vw, 1.6rem);
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+}
+
+.solar-game-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.solar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  color: #f1f5f9;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 160ms ease;
+}
+
+.solar-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.35);
+  transform: translateY(-1px);
+}
+
+.solar-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.solar-btn--cancel {
+  border-color: rgba(239, 68, 68, 0.35);
+  color: #fca5a5;
+}
+
+.solar-btn--cancel:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: #ef4444;
+}
+
+.solar-btn--primary {
+  background: linear-gradient(135deg, #e07b2f 0%, #f59e0b 100%);
+  border-color: #f59e0b;
+  color: #0f172a;
+}
+
+.solar-btn--primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #ea580c 0%, #d97706 100%);
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4);
+}
+
+/* Progress & Efficiency Bar */
+.solar-stats-panel {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.85rem 1.15rem;
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(85, 189, 235, 0.25);
+  border-radius: 16px;
+  margin-bottom: 1.25rem;
+}
+
+.solar-stat-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.solar-stat-label-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #94a3b8;
+}
+
+.solar-stat-value {
+  color: #38e1ff;
+  font-weight: 800;
+}
+
+.solar-progress-track {
+  position: relative;
+  width: 100%;
+  height: 14px;
+  background: #1e293b;
+  border-radius: 999px;
+  overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.solar-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #e07b2f 0%, #f59e0b 45%, #10b981 100%);
+  border-radius: 999px;
+  transition: width 140ms ease-out;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+}
+
+.solar-efficiency-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 90px;
+  padding: 0.4rem 0.8rem;
+  border-radius: 12px;
+  background: rgba(56, 225, 255, 0.1);
+  border: 1px solid rgba(56, 225, 255, 0.4);
+  text-align: center;
+}
+
+.solar-efficiency-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #7dd3fc;
+  font-weight: 700;
+}
+
+.solar-efficiency-metric {
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: #38e1ff;
+  line-height: 1.2;
+}
+
+/* Instructions / Hint Bar */
+.solar-instructions-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0.85rem;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 10px;
+  font-size: 0.78rem;
+  color: #cbd5e1;
+  margin-bottom: 1rem;
+}
+
+.solar-instruction-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.solar-keycap {
+  display: inline-block;
+  padding: 0.15rem 0.45rem;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+/* Interactive Solar Array Area */
+.solar-array-surface {
+  position: relative;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(var(--panels-count, 4), 1fr);
+  padding: 1.25rem;
+  background: linear-gradient(180deg, #0b1120 0%, #030712 100%);
+  border: 2px solid #334155;
+  border-radius: 20px;
+  box-shadow: inset 0 4px 16px rgba(0, 0, 0, 0.8), 0 8px 24px rgba(0, 0, 0, 0.4);
+  touch-action: none;
+  cursor: crosshair;
+}
+
+/* Individual Solar Panel */
+.solar-panel-module {
+  position: relative;
+  display: grid;
+  gap: 4px;
+  grid-template-rows: repeat(var(--panel-rows, 2), 1fr);
+  grid-template-columns: repeat(var(--panel-cols, 3), 1fr);
+  padding: 8px;
+  background: #1e293b;
+  border: 2px solid #475569;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+/* Individual Cell */
+.solar-cell {
+  position: relative;
+  min-height: 80px;
+  aspect-ratio: 1.2;
+  background: radial-gradient(circle at 50% 50%, #2563eb 0%, #1d4ed8 40%, #1e3a8a 100%);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  overflow: hidden;
+  cursor: pointer;
+  outline: none;
+  padding: 0;
+  transition: transform 120ms ease;
+}
+
+.solar-cell:hover:not(:disabled) {
+  transform: scale(1.02);
+}
+
+.solar-cell:focus-visible {
+  border-color: #38e1ff;
+  box-shadow: 0 0 0 3px #38e1ff, 0 0 16px rgba(56, 225, 255, 0.6);
+  z-index: 10;
+}
+
+/* Solar Cell Photovoltaic Lines */
+.solar-cell-grid {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.15) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.15) 1px, transparent 1px);
+  background-size: 20% 25%;
+  pointer-events: none;
+}
+
+.solar-cell-busbar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 3px;
+  transform: translateX(-50%);
+  background: rgba(226, 232, 240, 0.65);
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.4);
+  pointer-events: none;
+}
+
+/* Dust Layer on Cell */
+.solar-cell-dust-layer {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 60% 40%, #c2410c 0%, #9a3412 50%, #7c2d12 100%);
+  pointer-events: none;
+  transition: opacity 100ms ease-out;
+}
+
+.solar-cell-dust-specks {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255, 186, 115, 0.45) 1px, transparent 0);
+  background-size: 8px 8px;
+  pointer-events: none;
+}
+
+/* Clean shimmer effect when cell is spotless */
+.solar-cell--clean::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(56, 225, 255, 0.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* Floating Dust Particles */
+.solar-particles-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 20;
+}
+
+.solar-dust-particle {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+/* Completion Dialog Overlay */
+.solar-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(6, 10, 26, 0.88);
+  backdrop-filter: blur(8px);
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  z-index: 50;
+  animation: solarFadeIn 240ms ease-out;
+}
+
+.solar-modal-card {
+  position: relative;
+  width: min(520px, 100%);
+  padding: clamp(1.5rem, 4vw, 2.25rem);
+  background: radial-gradient(circle at 50% 0%, #1e293b 0%, #0f172a 100%);
+  border: 2px solid #10b981;
+  border-radius: 20px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(16, 185, 129, 0.3);
+  text-align: center;
+}
+
+.solar-modal-celebration-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.9rem;
+  border-radius: 999px;
+  background: rgba(16, 185, 129, 0.2);
+  border: 1px solid #10b981;
+  color: #34d399;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 0.75rem;
+}
+
+.solar-modal-title {
+  margin: 0 0 0.5rem;
+  font-size: clamp(1.4rem, 3.5vw, 1.85rem);
+  font-weight: 900;
+  color: #ffffff;
+}
+
+.solar-modal-metrics-deck {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  margin: 1.25rem 0;
+}
+
+.solar-modal-metric-card {
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+}
+
+.solar-modal-metric-label {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.solar-modal-metric-number {
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: #38e1ff;
+  margin-top: 0.2rem;
+}
+
+/* Science Explainer Box */
+.solar-science-card {
+  margin: 1.25rem 0;
+  padding: 0.9rem;
+  background: rgba(15, 23, 42, 0.75);
+  border-left: 3px solid #38e1ff;
+  border-radius: 8px;
+  text-align: left;
+}
+
+.solar-science-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #38e1ff;
+  margin-bottom: 0.35rem;
+}
+
+.solar-science-text {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: #cbd5e1;
+}
+
+.solar-science-disclaimer {
+  display: block;
+  margin-top: 0.45rem;
+  font-size: 0.68rem;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.solar-modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  margin-top: 1.5rem;
+}
+
+@keyframes solarFadeIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 640px) {
+  .solar-array-surface {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+    padding: 0.75rem;
+  }
+
+  .solar-cell {
+    min-height: 60px;
+  }
+
+  .solar-instructions-bar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .solar-modal-actions {
+    flex-direction: column;
+  }
+
+  .solar-modal-actions .solar-btn {
+    width: 100%;
+  }
+}
+
+/* Reduced Motion Mode */
+@media (prefers-reduced-motion: reduce) {
+  .solar-btn,
+  .solar-progress-fill,
+  .solar-modal-backdrop,
+  .solar-cell-dust-layer {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+.solar-game--reduced-motion .solar-btn,
+.solar-game--reduced-motion .solar-progress-fill,
+.solar-game--reduced-motion .solar-modal-backdrop,
+.solar-game--reduced-motion .solar-cell-dust-layer {
+  transition: none !important;
+  animation: none !important;
+}
