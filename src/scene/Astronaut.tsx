@@ -1,8 +1,8 @@
-import { useRef, type RefObject } from 'react';
-import { useFrame } from '@react-three/fiber';
-import type { Group } from 'three';
-import { dampFactor } from './sceneMath';
-
+import { useRef, type RefObject } from "react";
+import { useFrame } from "@react-three/fiber";
+import type { Group } from "three";
+import { dampFactor } from "./sceneMath";
+import type { AvatarId } from "../pages/__stubs__/avatarAdapter";
 export interface AstronautMotion {
   moving: boolean;
 }
@@ -10,18 +10,29 @@ export interface AstronautMotion {
 interface AstronautProps {
   motionRef: RefObject<AstronautMotion>;
   reducedMotion: boolean;
+  avatarId: AvatarId;
 }
 
-const SUIT = '#f3f1ec';
-const SUIT_SHADE = '#d9d6cf';
-const ACCENT = '#e07b2f';
-const VISOR = '#f2a33a';
+const SUIT = "#f3f1ec";
+const SUIT_SHADE = "#d9d6cf";
+const AVATAR_ACCENTS: Record<AvatarId, string> = {
+  "avatar-01": "#ff913d",
+  "avatar-02": "#55bdeb",
+  "avatar-03": "#b995ff",
+  "avatar-04": "#63e6c1",
+};
+const VISOR = "#f2a33a";
 
 /**
  * Primitive-built, readable astronaut. Local +Z is the facing direction
  * (visor and chest patch), so the parent group's Y rotation shows heading.
  */
-export default function Astronaut({ motionRef, reducedMotion }: AstronautProps) {
+export default function Astronaut({
+  motionRef,
+  reducedMotion,
+  avatarId,
+}: AstronautProps) {
+  const ACCENT = AVATAR_ACCENTS[avatarId];
   const bodyRef = useRef<Group>(null);
   const leftLegRef = useRef<Group>(null);
   const rightLegRef = useRef<Group>(null);
@@ -41,7 +52,8 @@ export default function Astronaut({ motionRef, reducedMotion }: AstronautProps) 
     if (leftArmRef.current) leftArmRef.current.rotation.x = -swing * 0.8;
     if (rightArmRef.current) rightArmRef.current.rotation.x = swing * 0.8;
     if (bodyRef.current) {
-      bodyRef.current.position.y = Math.abs(Math.sin(phaseRef.current)) * 0.06 * swingRef.current;
+      bodyRef.current.position.y =
+        Math.abs(Math.sin(phaseRef.current)) * 0.06 * swingRef.current;
     }
   });
 
@@ -50,12 +62,22 @@ export default function Astronaut({ motionRef, reducedMotion }: AstronautProps) 
       {/* Soft contact shadow (no shadow maps needed) */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
         <circleGeometry args={[0.5, 20]} />
-        <meshBasicMaterial color="#000000" transparent opacity={0.25} depthWrite={false} />
+        <meshBasicMaterial
+          color="#000000"
+          transparent
+          opacity={0.25}
+          depthWrite={false}
+        />
       </mesh>
 
       <group ref={bodyRef}>
         {/* Legs pivot at the hip */}
-        {([[-0.15, leftLegRef], [0.15, rightLegRef]] as const).map(([x, ref]) => (
+        {(
+          [
+            [-0.15, leftLegRef],
+            [0.15, rightLegRef],
+          ] as const
+        ).map(([x, ref]) => (
           <group key={x} ref={ref} position={[x, 0.62, 0]}>
             <mesh position={[0, -0.3, 0]}>
               <capsuleGeometry args={[0.11, 0.38, 4, 8]} />
@@ -84,7 +106,12 @@ export default function Astronaut({ motionRef, reducedMotion }: AstronautProps) 
         </mesh>
 
         {/* Arms pivot at the shoulder */}
-        {([[-0.38, leftArmRef], [0.38, rightArmRef]] as const).map(([x, ref]) => (
+        {(
+          [
+            [-0.38, leftArmRef],
+            [0.38, rightArmRef],
+          ] as const
+        ).map(([x, ref]) => (
           <group key={x} ref={ref} position={[x, 1.18, 0]}>
             <mesh position={[0, -0.25, 0]}>
               <capsuleGeometry args={[0.09, 0.34, 4, 8]} />
@@ -100,7 +127,13 @@ export default function Astronaut({ motionRef, reducedMotion }: AstronautProps) 
         </mesh>
         <mesh position={[0, 1.56, 0.1]} scale={[1, 0.8, 1]}>
           <sphereGeometry args={[0.24, 14, 10, 0, Math.PI, 0, Math.PI]} />
-          <meshStandardMaterial color={VISOR} metalness={0.6} roughness={0.25} emissive={VISOR} emissiveIntensity={0.15} />
+          <meshStandardMaterial
+            color={VISOR}
+            metalness={0.6}
+            roughness={0.25}
+            emissive={VISOR}
+            emissiveIntensity={0.15}
+          />
         </mesh>
       </group>
     </group>
