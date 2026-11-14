@@ -1,4 +1,6 @@
 import {
+  lazy,
+  Suspense,
   useEffect,
   useRef,
   useState,
@@ -18,10 +20,12 @@ import { generateContextualHint } from "../science/astroBotService";
 // import MarsScene from './__stubs__/MarsSceneAdapter'
 import MarsScene from "../scene/MarsScene";
 import {
+  bonusMission,
   missionLevels,
   useGameStore,
   type HotspotId,
 } from "../game/uiAdapter";
+import { BONUS_MISSION_05, BONUS_MISSION_05_ID } from "../data/nasa/bonusMission05";
 import { useAvatarSelection } from "./useAvatarSelection";
 
 const gameplayKeys = new Set([
@@ -35,6 +39,12 @@ const gameplayKeys = new Set([
   "arrowleft",
   "arrowright",
 ]);
+
+const BonusEvidenceCards = lazy(() =>
+  import("../components/ui/BonusEvidenceCards").then((module) => ({
+    default: module.BonusEvidenceCards,
+  })),
+);
 
 // App imports this page statically, so this runs at app start. It attaches the
 // passive gesture/visibility/menu-click listeners once (idempotent). Nothing plays
@@ -54,7 +64,9 @@ export function GameplayPage() {
   const inspectButtonRef = useRef<HTMLButtonElement>(null);
   const contextPanelRef = useRef<HTMLElement>(null);
   const wasContextOpen = useRef(false);
-  const level = missionLevels.find((item) => item.id === store.activeLevelId);
+  const level = [...missionLevels, bonusMission].find(
+    (item) => item.id === store.activeLevelId,
+  );
   const event = level?.events[store.eventIndex];
 
   const objectiveKey = level && event ? `${level.id}:${event.id}` : "";
@@ -237,6 +249,14 @@ export function GameplayPage() {
           />
         </div>
 
+        {level.id === BONUS_MISSION_05_ID && (
+          <div className="bonus-replay-badge" role="note">
+            <strong>Real event replay · 20 May 2024</strong>
+            <span>Historical NASA evidence · not live space-weather data</span>
+            <p>{BONUS_MISSION_05.pipOpening}</p>
+          </div>
+        )}
+
         <div className="gameplay-resource-hud">
           <ResourceDashboard
             resources={store.resources}
@@ -320,6 +340,14 @@ export function GameplayPage() {
                 }}
                 onContinue={store.continueMission}
               />
+              {level.id === BONUS_MISSION_05_ID && store.lastDecision && (
+                <Suspense fallback={<p className="bonus-evidence-loading">Loading historical evidence…</p>}>
+                  <BonusEvidenceCards
+                    eventIds={[event.id]}
+                    heading="Evidence for this decision"
+                  />
+                </Suspense>
+              )}
               <div className="contextual-hint-row">
                 <button
                   type="button"

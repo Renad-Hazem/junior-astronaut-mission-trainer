@@ -4,10 +4,12 @@ import { AvatarIdentity } from "../components/ui/AvatarIdentity";
 import { AvatarPicker } from "../components/ui/AvatarPicker";
 import { BRAND } from "../components/ui/brand";
 import {
+  bonusMission,
   isLevelUnlocked,
   missionLevels,
   useGameStore,
 } from "../game/uiAdapter";
+import { BONUS_MISSION_05 } from "../data/nasa/bonusMission05";
 import { useAvatarSelection } from "./useAvatarSelection";
 
 const missionIcons = ["🚀", "☀️", "O₂", "🛡️"];
@@ -15,6 +17,9 @@ const missionIcons = ["🚀", "☀️", "O₂", "🛡️"];
 export function MissionLibraryPage() {
   const selectLevel = useGameStore((state) => state.selectLevel);
   const completedLevelIds = useGameStore((state) => state.completedLevelIds);
+  const completedBonusMissionIds = useGameStore(
+    (state) => state.completedBonusMissionIds,
+  );
   const { selectedAvatarId, selectAvatar } = useAvatarSelection();
   const [isChangingAvatar, setIsChangingAvatar] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -148,6 +153,55 @@ export function MissionLibraryPage() {
             </article>
           );
         })}
+      </section>
+      <section className="bonus-mission-section" aria-labelledby="bonus-mission-title">
+        <div className="bonus-mission-section__intro">
+          <span className="eyebrow">OPTIONAL NASA DATA MISSION</span>
+          <h2 id="bonus-mission-title">Bonus Mission 05</h2>
+          <p>
+            This replay is always available for the demo and never changes the
+            four-mission unlock path.
+          </p>
+        </div>
+        <article className="mission-card mission-card--bonus">
+          <div className="mission-card__visual">
+            <span className="mission-card__number">05</span>
+            <span className="mission-card__icon" aria-hidden="true">☀️</span>
+            <span className="mission-card__minutes">
+              {bonusMission.estimatedMinutes[0]}–{bonusMission.estimatedMinutes[1]} MIN TARGET
+            </span>
+          </div>
+          <div className="mission-card__body">
+            <div className="mission-card__meta">
+              <span>BONUS · MAY 2024 REPLAY</span>
+              <span className="difficulty difficulty--bonus">NASA EVIDENCE</span>
+            </div>
+            <span className={`mission-state ${completedBonusMissionIds.includes(bonusMission.id) ? "mission-state--completed" : "mission-state--ready"}`}>
+              {completedBonusMissionIds.includes(bonusMission.id)
+                ? "Completed · Replay available"
+                : "Always available"}
+            </span>
+            <h2>{bonusMission.title}</h2>
+            <p className="mission-card__story">{BONUS_MISSION_05.tagline}</p>
+            <div className="learning-objective">
+              <strong>HISTORICAL EVIDENCE</strong>
+              <span>
+                Compare actual measurements, model predictions, NASA statements,
+                and fictional training values.
+              </span>
+            </div>
+            <button
+              type="button"
+              className="card-button"
+              onClick={() => selectLevel(bonusMission.id)}
+            >
+              {completedBonusMissionIds.includes(bonusMission.id)
+                ? "Replay Bonus Mission"
+                : "Start Bonus Mission"}{" "}
+              <span aria-hidden="true">→</span>
+            </button>
+          </div>
+        </article>
       </section>
       <footer className="site-footer">
         All missions use friendly, nonviolent engineering challenges. You can

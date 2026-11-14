@@ -1,4 +1,5 @@
 import type { MissionLevel } from '../game/types';
+import { BONUS_MISSION_05 } from './nasa/bonusMission05';
 
 export const MISSION_LEVELS: MissionLevel[] = [
   // =========================================================================
@@ -788,6 +789,27 @@ export const MISSION_LEVELS: MissionLevel[] = [
   },
 ];
 
+/** Optional mission kept outside MISSION_LEVELS so it cannot alter campaign progression. */
+export const BONUS_MISSION_LEVEL: MissionLevel = {
+  id: BONUS_MISSION_05.id,
+  levelNumber: BONUS_MISSION_05.bonusNumber,
+  title: BONUS_MISSION_05.title,
+  difficulty: BONUS_MISSION_05.difficulty,
+  estimatedMinutes: BONUS_MISSION_05.estimatedMinutes,
+  tagline: BONUS_MISSION_05.tagline,
+  story: BONUS_MISSION_05.story,
+  pipOpening: BONUS_MISSION_05.pipOpening,
+  pipClosing: BONUS_MISSION_05.pipClosing,
+  learningObjectives: [...BONUS_MISSION_05.learningObjectives],
+  initialResources: { ...BONUS_MISSION_05.initialResources },
+  initialSceneStatus: BONUS_MISSION_05.initialSceneStatus,
+  activeHighlightResources: [...BONUS_MISSION_05.activeHighlightResources],
+  events: BONUS_MISSION_05.events,
+  briefTryNextTime: BONUS_MISSION_05.briefTryNextTime,
+  briefScienceFactIds: [...BONUS_MISSION_05.briefScienceFactIds],
+};
+
 export function getMissionLevelById(levelId: string): MissionLevel | undefined {
+  if (levelId === BONUS_MISSION_LEVEL.id) return BONUS_MISSION_LEVEL;
   return MISSION_LEVELS.find((lvl) => lvl.id === levelId);
 }

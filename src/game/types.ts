@@ -3,7 +3,16 @@ export type LevelId =
   | 'level-2-power-crisis'
   | 'level-3-oxygen-emergency'
   | 'level-4-survival-challenge'
+  | 'bonus-05-solar-storm-watch'
   | (string & {});
+
+export type MissionNumber = 1 | 2 | 3 | 4 | 5;
+export type MissionTitle =
+  | 'First Day on Mars'
+  | 'Power Crisis'
+  | 'Oxygen Emergency'
+  | 'Mars Survival Challenge'
+  | 'Solar Storm Watch';
 
 export type HotspotId =
   | 'habitat'
@@ -72,9 +81,9 @@ export interface MissionEvent {
 
 export interface MissionLevel {
   id: LevelId;
-  levelNumber: 1 | 2 | 3 | 4;
-  title: 'First Day on Mars' | 'Power Crisis' | 'Oxygen Emergency' | 'Mars Survival Challenge';
-  difficulty: 'Beginner' | 'Intermediate' | 'Intermediate–Advanced' | 'Capstone';
+  levelNumber: MissionNumber;
+  title: MissionTitle;
+  difficulty: 'Beginner' | 'Intermediate' | 'Intermediate–Advanced' | 'Capstone' | 'Bonus';
   estimatedMinutes: string;
   tagline: string;
   story: string;
@@ -125,7 +134,7 @@ export interface ResourceComparisonRow {
 
 export interface MissionBriefReport {
   levelId: LevelId;
-  levelNumber: 1 | 2 | 3 | 4;
+  levelNumber: MissionNumber;
   missionTitle: MissionLevel['title'];
   status: MissionCompletionStatus;
   isStabilizationProtocol: boolean;
@@ -153,6 +162,7 @@ export interface GameStore {
   isMissionComplete: boolean;
   missionBrief: MissionBriefReport | null;
   completedLevelIds: LevelId[];
+  completedBonusMissionIds: LevelId[];
 
   selectLevel: (levelId: LevelId) => void;
   chooseOption: (choiceId: string) => void;
