@@ -42,35 +42,41 @@ This folder holds the centralized game audio, built on the Web Audio API with no
 | `brief-open` only | Completion after stabilization | Engine transition |
 | `astrobot-message` | AstroBot appends an answer (not the "thinking" bubble, not the welcome message) | Observes new `.astro-message-row--bot` nodes (see the caveat below) |
 | `menu-navigate` | Button clicks outside the mission HUD and the AstroBot panel, plus elements marked `data-audio="nav"` | Delegated click listener |
-| `footstep` | The astronaut is actually moving | **Pending** the scene's `onMovementChange` (see below) |
+| `footstep` | The astronaut is actually moving | `MarsScene`'s `onMovementChange` (wired in `GameplayPage.tsx`, see below) |
 
 Opt out of the navigation tick with `data-audio="silent"`; opt in inside the HUD with `data-audio="nav"`.
 
-## Pending handoff: footsteps (`onMovementChange`)
+## Footsteps (`onMovementChange`) — wired
 
-Footsteps must follow **real movement**, never key presses. `useGameplayAudio` already returns `onMovementChange(moving: boolean)`, backed by `FootstepController`, which:
+Footsteps follow **real movement**, never key presses. `GameplayPage.tsx` passes `useGameplayAudio`'s `onMovementChange` to `MarsScene`. The scene's contract (`src/scene/sceneCallbacks.ts`):
+- reports actual displacement after collision resolution
+- fires only on transitions
+- emits `false` on input lock, level change and unmount
+- merges keyboard and touch input
+
+`FootstepController`:
 - steps immediately, then every 380 ms, on one interval (never one sound per frame)
 - stops at once on `false`, and ignores repeated `true` signals
 - stays silent while input is locked (the decision panel or AstroBot is open)
-- works the same for keyboard and touch
 
-`MarsSceneProps` on the approved base (`face126c`) has **no** `onMovementChange` prop, so it is deliberately not passed yet. Passing it now would break the type-check. Once the 3D agent's contract lands, the last step in `src/pages/GameplayPage.tsx` is:
-
-```tsx
-const { observeRoot: observeAudioRoot, onMovementChange } = useGameplayAudio({ /* unchanged */ });
-// …
-<MarsScene /* existing props */ onMovementChange={onMovementChange} />
-```
-
-The scene should call it on **transitions** (`true` when the player starts moving, `false` when stopped, blocked or input-locked). Calling it every frame is harmless but unnecessary. Verify with `node src/audio/tools/browser-qa.mjs`: the movement scenario currently asserts that holding D plays **no** footsteps, so update that check to expect steps while moving and none after release.
+`browser-qa.mjs` verifies all of this with real input:
+- the `walkingFootsteps` scenario covers start, release, pinned at the map edge, decision lock, AstroBot lock, unmount and restart
+- `mobileFlow` covers the touch d-pad
+- `hotspotsAndRocket` covers long walks
 
 ## Interim DOM observers (to replace with explicit callbacks)
 
-Two events have no callback on the approved base, and the owning files must not be edited now:
-- **Proximity:** `MarsScene` renders `data-nearby-hotspot` on its container. Ideal replacement: an `onNearbyChange?: (id: HotspotId | null) => void` prop.
-- **AstroBot replies:** `AstroChatbot.tsx` (Codex is editing it) renders `.astro-message-row--bot`. Ideal replacement: an `onBotMessage?: () => void` prop.
+Two events still have no callback, so the audio observes markup (re-verified after merging `fix/final-gameplay-qa`):
+- **Proximity:** `MarsScene` renders `data-nearby-hotspot` on its container. The QA branch's "distant-click protection" changed `SceneHotspot.tsx` clicks, not this attribute.
+- **AstroBot replies:** `AstroChatbot.tsx` renders `.astro-message-row--bot`. The QA branch changed only chip text and labels, not this markup.
 
-If that markup changes, the sound simply stops playing: there are no errors and no effect on gameplay. The browser QA run catches the regression (the AstroBot check fails).
+If that markup changes, the sound simply stops playing: there are no errors and no effect on gameplay. `browser-qa.mjs` catches the regression in its AstroBot and hotspot checks.
+
+**Proposed improvement** (a separate PR for the owners, after the QA work settles), following the optional-callback pattern of `sceneCallbacks.ts`:
+- `MarsSceneProps.onNearbyChange?: (id: HotspotId | null) => void`. `MarsScene` already has `handleNearbyChange` internally, so it only needs to call the prop too.
+- `AstroChatbotProps.onBotMessage?: (message: { id: string; grounded: boolean }) => void`, called where `setMessages` appends a bot answer (not the welcome message or the thinking bubble).
+
+Then `useGameplayAudio` would drop the `MutationObserver` and `GameplayPage.tsx` would pass the two callbacks.
 
 ## Settings placement
 
@@ -83,8 +89,11 @@ Home, Library and Brief have no sound button: those pages belong to the UI owner
 ## Commands
 
 ```bash
-npm test                                   # includes 33 audio unit tests (fake AudioContext)
+npm test                                   # includes 34 audio unit tests (fake AudioContext)
+node src/audio/tools/browser-qa.mjs --plan-only   # check hotspot walk plans against the scene's own physics (no browser)
 npm run build && npx vite preview --port 4317 --strictPort
+# DevTools port 9333 is shared with `npm run qa:browser`: run the two one after the other, not at the same time.
+# --only walkingFootsteps,mobileFlow   runs a subset of scenarios
 node src/audio/tools/browser-qa.mjs --url http://127.0.0.1:4317/ --out ../audio-qa-results
 node src/audio/tools/build-mars-wind-loop.mjs <downloaded NASA 45704_…wav>
 ```

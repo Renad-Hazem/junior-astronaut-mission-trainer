@@ -4,6 +4,8 @@
 
 Every result below comes from a real run on that date. Nothing here is inferred or estimated.
 
+> **Sections 1–5 describe the audio branch on its own** (before footsteps were wired). For the integrated build (`integration/mars-world-audio`: Mars World + Audio + final gameplay QA, with footsteps wired), see **§6**.
+
 ## 1. Required commands (final run, after a clean `npm ci`)
 
 | Command | Exit | Result |
@@ -123,8 +125,8 @@ Browser: **Chrome/157.0.8103.51** · App: http://127.0.0.1:4317/ (production bui
 - **Browsers:** only Chromium (Chrome 157) was run. Safari (including iOS's "interrupted" audio state) and Firefox were not tested. The code handles `webkitAudioContext`, callback-style `decodeAudioData` and non-`running` states, but that handling is unverified on those engines.
 - **Mobile:** emulated (390×844 viewport with touch events) in desktop Chrome, not on a physical phone.
 - **Hidden tab:** suspend and resume are covered by unit tests only, not in the browser run.
-- **Footsteps:** not wired. The browser run confirms that holding a movement key plays **no** footsteps, because keyboard input is not used to infer movement. The pending `onMovementChange` step is described in `src/audio/README.md`.
-- **Proximity scanner and AstroBot sounds** depend on DOM markup owned by other agents (`data-nearby-hotspot`, `.astro-message-row--bot`). AstroBot was verified in the browser. The proximity ping fired during the Level 4 run, but it has no dedicated assertion because no scripted walk to a hotspot was performed.
+- **Footsteps:** not wired on the audio branch alone. Superseded by the integration: footsteps are wired and verified in §6.
+- **Proximity scanner and AstroBot sounds** depend on DOM markup owned by other agents (`data-nearby-hotspot`, `.astro-message-row--bot`). AstroBot was verified in the browser. Dedicated proximity checks were added in the integration run (§6).
 
 ## 5. Reproduce
 
@@ -133,3 +135,38 @@ npm ci && npm run build
 npx vite preview --port 4317 --strictPort --host 127.0.0.1    # stop it before running npm ci again (Windows file lock)
 node src/audio/tools/browser-qa.mjs --url http://127.0.0.1:4317/ --out ../audio-qa-results
 ```
+
+## 6. Integration run — `integration/mars-world-audio`
+
+**Merged onto `face126c`, in order:**
+- `feature/mars-world-enhancements` (`747016e`)
+- `feature/mars-audio-system` (`fa190aa`)
+- `fix/final-gameplay-qa` (`e5fb32b`)
+
+All three were normal merges with no conflicts. Footsteps are wired: `GameplayPage` passes `onMovementChange` to `MarsScene` (contract: `src/scene/sceneCallbacks.ts`). Run on 2026-11-14 with Chrome 157 (headless, `--autoplay-policy=user-gesture-required`).
+
+| Command | Result |
+|---|---|
+| `npm ci` / `npm run build` / `npm run lint` | exit 0 / 0 / 0 |
+| `npm test` | 6 files, **56 tests** (8 engine, 6 scene, 34 audio, 8 AstroBot) |
+| `node src/integrations/nasa/__tests__/run.ts` | 40 passed |
+| `node src/audio/tools/browser-qa.mjs --plan-only` | 7/7 hotspot walk plans reach their hotspot in the scene's own physics |
+| `node src/audio/tools/browser-qa.mjs` (production build, `vite preview`) | **87/87**, 0 console errors |
+| `npm run qa:browser` | all four levels completed, 0 exceptions, 0 console errors. Passed 5/5 runs after the reload-race fix (2/4 before it; see below). |
+| `git diff --check` | clean |
+
+**What the 87 browser checks add for the integration:**
+- **Footsteps** (real keys, 107 fps). None while standing. They start on movement and stop on key release. They stop when the astronaut is pinned at the map edge with the key still held. They stop when the decision panel or AstroBot opens, and keys pressed during either play none. They stop on unmount. A restarted mission stays silent until the astronaut moves.
+- **Touch:** holding the d-pad plays steps; they stop when the finger lifts.
+- **All 7 hotspots** reached with real key holds along paths planned on the scene's collision model. Each arrival is confirmed by the scene's `data-nearby-hotspot`, with a proximity ping and footsteps on the way.
+- **Rocket landing zone:** reached, with a screenshot.
+- **Dust-storm event** (Level 2): NASA wind plus synthesized gust layer, measured audible.
+- **AstroBot reply sound** still fires after the QA branch's chatbot changes.
+- **Level 3** with a different avatar ("Lumi") shown in the HUD, ending on the Mission Brief.
+- **Levels 1, 2 and 4** as before.
+
+**Problems found and fixed during the integration:**
+1. `decision-select` had a 300 ms cooldown, which dropped a genuine decision cue when two decisions came about 300 ms apart (seen 1 run in 4). Decision cues are already de-duplicated by the engine, so the cooldown is now 120 ms with a 2-voice cap, and a unit test was added.
+2. `scripts/final-gameplay-browser-qa.mjs` clicked right after `Page.reload` and could act on the old document. The Vite dev server's slower first load with the merged modules exposed this, and the run failed 2 of 4 times ("Timed out waiting for .avatar-picker"). It now waits for the new document (`performance.timeOrigin` change) before interacting. This is a test-only change in a separate commit, for the QA owner to keep or replace.
+
+**Still not covered:** human listening, Safari/iOS/Firefox, and physical phones.

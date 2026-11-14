@@ -16,6 +16,7 @@
 import { spawn } from 'node:child_process';
 import { existsSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const args = Object.fromEntries(process.argv.slice(2).reduce((acc, a, i, all) => (a.startsWith('--') ? [...acc, [a.slice(2), all[i + 1]]] : acc), []));
 const BASE = (args.url ?? 'http://127.0.0.1:4317/').replace(/\/?$/, '/');
@@ -162,15 +163,170 @@ async function click(page, finder, times = 1) {
 }
 
 const KEYS = {
-  w: ['w', 'KeyW', 87, 'w'], d: ['d', 'KeyD', 68, 'd'], e: ['e', 'KeyE', 69, 'e'],
+  w: ['w', 'KeyW', 87, 'w'], a: ['a', 'KeyA', 65, 'a'], s: ['s', 'KeyS', 83, 's'], d: ['d', 'KeyD', 68, 'd'], e: ['e', 'KeyE', 69, 'e'],
   ArrowLeft: ['ArrowLeft', 'ArrowLeft', 37], Escape: ['Escape', 'Escape', 27],
 };
-async function key(page, name, { holdMs = 0 } = {}) {
+const keyDown = (page, name) => {
   const [k, code, vk, text] = KEYS[name];
-  await page.send('Input.dispatchKeyEvent', { type: text ? 'keyDown' : 'rawKeyDown', key: k, code, windowsVirtualKeyCode: vk, ...(text ? { text } : {}) });
+  return page.send('Input.dispatchKeyEvent', { type: text ? 'keyDown' : 'rawKeyDown', key: k, code, windowsVirtualKeyCode: vk, ...(text ? { text } : {}) });
+};
+const keyUp = (page, name) => {
+  const [k, code, vk] = KEYS[name];
+  return page.send('Input.dispatchKeyEvent', { type: 'keyUp', key: k, code, windowsVirtualKeyCode: vk });
+};
+async function key(page, name, { holdMs = 0 } = {}) {
+  await keyDown(page, name);
   if (holdMs) await sleep(holdMs);
-  await page.send('Input.dispatchKeyEvent', { type: 'keyUp', key: k, code, windowsVirtualKeyCode: vk });
+  await keyUp(page, name);
 }
+
+/** Press and hold an on-screen button with a real (emulated) touch, then lift. */
+async function touchHold(page, finder, ms) {
+  const p = await locate(page, finder);
+  if (!p) throw new Error(`Element not found: ${finder}`);
+  await page.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: p.x, y: p.y }] });
+  await sleep(ms);
+  await page.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+}
+
+// ---------------------------------------------------------------------------
+// Scene model + path planning (uses the scene's own config and collision code)
+// ---------------------------------------------------------------------------
+
+/** Loads src/scene/sceneConfig.ts and sceneMath.ts through Vite, so planning uses the real obstacles. */
+async function loadSceneModel() {
+  const { createServer } = await import('vite');
+  const root = resolve(fileURLToPath(new URL('../../..', import.meta.url)));
+  const server = await createServer({ root, logLevel: 'error', appType: 'custom', server: { middlewareMode: true, hmr: false } });
+  try {
+    return { cfg: await server.ssrLoadModule('/src/scene/sceneConfig.ts'), math: await server.ssrLoadModule('/src/scene/sceneMath.ts') };
+  } finally {
+    await server.close();
+  }
+}
+
+const KEY_FOR = { up: 'w', down: 's', left: 'a', right: 'd' };
+
+/**
+ * Dijkstra over a 0.25-unit grid using the 8 directions the keyboard can produce
+ * (direction vectors come from the scene's own readInputVector + screenToWorld).
+ * Keeps 0.35 units of clearance from every obstacle so the replay never slides
+ * along a collider. Returns key-hold segments, or null if no path exists.
+ */
+function planPath(model, goal) {
+  const { cfg, math } = model;
+  const CELL = 0.25;
+  const CLEAR = 0.35;
+  const N = Math.ceil(cfg.MAP_HALF_SIZE / CELL);
+  const combos = [['up'], ['down'], ['left'], ['right'], ['up', 'right'], ['up', 'left'], ['down', 'right'], ['down', 'left']];
+  const dirs = combos.map((dirsHeld) => {
+    const input = math.createInputState();
+    dirsHeld.forEach((d) => { input[d] = true; });
+    const v = math.screenToWorld(math.readInputVector(input));
+    return { keys: dirsHeld.map((d) => KEY_FOR[d]), di: Math.sign(Math.round(v.x * 100)), dj: Math.sign(Math.round(v.z * 100)) };
+  });
+  const B = cfg.PLAYER_BOUNDS;
+  const free = (x, z) =>
+    x >= B.minX + CLEAR && x <= B.maxX - CLEAR && z >= B.minZ + CLEAR && z <= B.maxZ - CLEAR &&
+    cfg.OBSTACLES.every((o) => Math.hypot(x - o.x, z - o.z) >= o.radius + cfg.PLAYER_RADIUS + CLEAR);
+  const id = (i, j) => (i + N) * (2 * N + 1) + (j + N);
+  const si = Math.round(cfg.PLAYER_SPAWN.x / CELL);
+  const sj = Math.round(cfg.PLAYER_SPAWN.z / CELL);
+  const dist = new Map();
+  const prev = new Map();
+  // Binary min-heap on cost.
+  const heap = [];
+  const push = (item) => {
+    heap.push(item);
+    for (let n = heap.length - 1; n > 0; ) {
+      const p = (n - 1) >> 1;
+      if (heap[p][0] <= heap[n][0]) break;
+      [heap[p], heap[n]] = [heap[n], heap[p]];
+      n = p;
+    }
+  };
+  const pop = () => {
+    const top = heap[0];
+    const last = heap.pop();
+    if (heap.length) {
+      heap[0] = last;
+      for (let n = 0; ; ) {
+        const l = 2 * n + 1;
+        const r = l + 1;
+        let m = n;
+        if (l < heap.length && heap[l][0] < heap[m][0]) m = l;
+        if (r < heap.length && heap[r][0] < heap[m][0]) m = r;
+        if (m === n) break;
+        [heap[m], heap[n]] = [heap[n], heap[m]];
+        n = m;
+      }
+    }
+    return top;
+  };
+  push([0, si, sj, -1]);
+  dist.set(`${id(si, sj)}:-1`, 0);
+  while (heap.length) {
+    const [c, i, j, d] = pop();
+    if (goal(i * CELL, j * CELL)) {
+      const steps = [];
+      let key = `${id(i, j)}:${d}`;
+      let node = { i, j, d };
+      while (prev.has(key)) {
+        steps.unshift(node.d);
+        node = prev.get(key);
+        key = `${id(node.i, node.j)}:${node.d}`;
+      }
+      const segments = [];
+      for (const s of steps) {
+        const last = segments[segments.length - 1];
+        if (last && last.d === s) last.n += 1;
+        else segments.push({ d: s, n: 1 });
+      }
+      return {
+        end: { x: i * CELL, z: j * CELL },
+        segments: segments.map(({ d: k, n }) => {
+          const len = n * CELL * Math.hypot(dirs[k].di, dirs[k].dj);
+          return { keys: dirs[k].keys, ms: Math.round((len / cfg.PLAYER_SPEED) * 1000), units: +len.toFixed(2) };
+        }),
+      };
+    }
+    if (c > (dist.get(`${id(i, j)}:${d}`) ?? Infinity)) continue;
+    dirs.forEach((dir, k) => {
+      const ni = i + dir.di;
+      const nj = j + dir.dj;
+      if (Math.abs(ni) > N || Math.abs(nj) > N) return;
+      const x = ni * CELL;
+      const z = nj * CELL;
+      if (!free(x, z) || !free((i * CELL + x) / 2, (j * CELL + z) / 2)) return;
+      const nc = c + CELL * Math.hypot(dir.di, dir.dj) + (d !== -1 && d !== k ? 0.6 : 0);
+      const nk = `${id(ni, nj)}:${k}`;
+      if (nc < (dist.get(nk) ?? Infinity)) {
+        dist.set(nk, nc);
+        prev.set(nk, { i, j, d });
+        push([nc, ni, nj, k]);
+      }
+    });
+  }
+  return null;
+}
+
+const nearbyAttr = `document.querySelector('[data-nearby-hotspot]')?.getAttribute('data-nearby-hotspot')`;
+
+/** Replays a planned path with real key holds. */
+async function walk(page, plan) {
+  for (const seg of plan.segments) {
+    for (const k of seg.keys) await keyDown(page, k);
+    await sleep(seg.ms);
+    for (const k of seg.keys) await keyUp(page, k);
+    await sleep(40);
+  }
+}
+
+/** Frames per second the page is actually rendering (movement is clamped to 0.1 s per frame). */
+const measureFps = (page) =>
+  evaluate(page, `new Promise((r) => { let n = 0; const t0 = performance.now(); const f = () => { n += 1; if (performance.now() - t0 < 1000) requestAnimationFrame(f); else r(n); }; requestAnimationFrame(f); })`);
+
+const steps = (page) => count(page, 'footstep');
 
 const audio = (page) => evaluate(page, `({ snap: window.__asterAudio?.snapshot() ?? null, stats: window.__asterAudio?.stats() ?? null, qa: window.__qa })`);
 const count = async (page, id) => ((await audio(page)).stats?.playCounts?.[id] ?? 0);
@@ -358,6 +514,12 @@ async function warningScenario(browser) {
   await page.send('Page.reload');
   await waitFor(page, `window.__asterAudio`, 15_000);
   check('entered Level 2 (Power Crisis)', await enterMission(page, 'Power Crisis'));
+  // Level 2 event 1 uses sceneStatus "dust": NASA wind + synthesized gust layer.
+  await waitFor(page, `window.__asterAudio.snapshot().ambienceSource === 'nasa-recording'`, 8000);
+  const storm = await evaluate(page, `({ snap: window.__asterAudio.snapshot(), dustLayer: Boolean(window.__asterAudio.manager.ambience?.dust), baseLayer: Boolean(window.__asterAudio.manager.ambience?.base) })`);
+  await sleep(2200);
+  const stormRms = await masterRms(page, 500);
+  check('dust-storm event: NASA wind plus synthesized gust layer, audible', storm.snap.ambienceMode === 'dust' && storm.snap.ambienceSource === 'nasa-recording' && storm.dustLayer && storm.baseLayer && stormRms > 0.0005, { mode: storm.snap.ambienceMode, source: storm.snap.ambienceSource, dustLayer: storm.dustLayer, rms: stormRms });
   await click(page, `document.querySelector('.task-prompt__action')`);
   await waitFor(page, `document.querySelectorAll('.decision-option').length > 1`);
   await click(page, `document.querySelectorAll('.decision-option')[1]`); // "Keep greenhouse at full power" → energy < 30
@@ -384,9 +546,14 @@ async function stabilizationAndAstroBot(browser) {
   await click(page, `document.querySelector('.astro-chatbot-close')`);
   await sleep(200);
 
+  // Formerly asserted "no footsteps" (scene signal not wired). Now: real walking steps, which stop on release.
+  const stepsIdle = await steps(page);
   await key(page, 'd', { holdMs: 1200 });
+  const stepsWalked = await steps(page);
+  await sleep(900);
+  const stepsAfter = await steps(page);
+  check('walking with D plays footsteps; they stop after release', stepsIdle === 0 && stepsWalked - stepsIdle >= 2 && stepsAfter === stepsWalked, { stepsIdle, stepsWalked, stepsAfter });
   a = await audio(page);
-  check('holding a movement key plays no footsteps (no keyboard inference; scene signal not wired yet)', (a.stats.playCounts.footstep ?? 0) === 0);
 
   const decBefore = a.stats.playCounts['decision-select'] ?? 0;
   for (let i = 0; i < 3; i += 1) await playEvent(page, 0);
@@ -395,7 +562,7 @@ async function stabilizationAndAstroBot(browser) {
   await click(page, `document.querySelectorAll('.decision-option')[0]`);
   await sleep(500);
   a = await audio(page);
-  check('final exhausting decision plays stabilization (not decision/warning)', a.stats.playCounts.stabilization === 1 && a.stats.playCounts['decision-select'] === decBefore + 3, a.stats.playCounts);
+  check('final exhausting decision plays stabilization (not decision/warning)', a.stats.playCounts.stabilization === 1 && a.stats.playCounts['decision-select'] === decBefore + 3, { plays: a.stats.playCounts, suppressed: a.stats.suppressedCounts, decBefore });
   await click(page, `document.querySelector('.decision-continue')`);
   await waitFor(page, `!document.querySelector('.gameplay-page')`, 5000);
   a = await audio(page);
@@ -446,6 +613,17 @@ async function mobileFlow(browser) {
   check('entered Level 1 with taps', await enterMission(page, 'First Day on Mars'));
   let a = await audio(page);
   check('touch unlocked audio (context running)', a.snap.unlocked && a.snap.contextState === 'running', a.snap);
+  const dpad = await locate(page, byAria('Move down'));
+  check('touch d-pad is shown on the touch device', Boolean(dpad), dpad);
+  await screenshot(page, 'mobile-gameplay');
+  if (dpad) {
+    const before = await steps(page);
+    await touchHold(page, byAria('Move down'), 1300);
+    const walked = await steps(page);
+    await sleep(900);
+    const after = await steps(page);
+    check('touch walking (held d-pad) plays footsteps; they stop when the finger lifts', walked - before >= 2 && after === walked, { before, walked, after });
+  }
   const toggle = await locate(page, TOGGLE);
   check('sound button visible inside the 390px viewport, ≥ 44px', toggle && toggle.left >= 0 && toggle.right <= 390 && toggle.top >= 0 && toggle.w >= 44 && toggle.h >= 44, toggle);
   await click(page, TOGGLE);
@@ -460,6 +638,193 @@ async function mobileFlow(browser) {
   a = await audio(page);
   check('tap mute works on mobile', a.snap.settings.muted === true);
   await page.close();
+}
+
+/**
+ * Footsteps follow MarsScene's onMovementChange (real displacement), so they must start
+ * only while the astronaut moves and stop on release, collision, decision lock,
+ * AstroBot, unmount and mission restart.
+ */
+async function walkingFootsteps(browser) {
+  current = 'walking-footsteps';
+  const page = await openPage(browser);
+  await navigate(page, `${BASE}?audioDebug=1`);
+  check('entered Level 1', await enterMission(page, 'First Day on Mars'));
+  await sleep(800);
+  const fps = await measureFps(page);
+  check('scene renders ≥ 10 fps (movement is clamped at 0.1 s per frame)', fps >= 10, { fps });
+  const s0 = await steps(page);
+  await sleep(1000);
+  check('standing still: no footsteps', s0 === 0 && (await steps(page)) === 0, { s0 });
+
+  await keyDown(page, 's');
+  await sleep(600);
+  const sMid = await steps(page);
+  await sleep(700);
+  await keyUp(page, 's');
+  const sRel = await steps(page);
+  await sleep(900);
+  const sAfter = await steps(page);
+  check('steps start as soon as the astronaut moves and repeat while walking', sMid >= 1 && sRel >= 3, { sMid, sRel });
+  check('steps stop on key release', sAfter === sRel, { sRel, sAfter });
+
+  // Keep walking toward the +x/+z corner until the map edge pins the astronaut, key still held.
+  await keyDown(page, 's');
+  await sleep(6000);
+  const pinA = await steps(page);
+  await sleep(1500);
+  const pinB = await steps(page);
+  await keyUp(page, 's');
+  check('steps stop when the astronaut is blocked (pinned at the map edge, key still held)', pinA > sAfter && pinB === pinA, { sAfter, pinA, pinB });
+
+  await keyDown(page, 'w');
+  await sleep(700);
+  const sW = await steps(page);
+  await click(page, `document.querySelector('.task-prompt__action')`);
+  await waitFor(page, `document.querySelector('.contextual-panel')`);
+  const lockA = await steps(page);
+  await sleep(1200);
+  const lockB = await steps(page);
+  await keyUp(page, 'w');
+  await key(page, 'd', { holdMs: 800 });
+  const lockC = await steps(page);
+  check('decision panel locks movement: steps stop, keys pressed during it make none', sW > pinB && lockB === lockA && lockC === lockA, { sW, lockA, lockB, lockC });
+  await click(page, `document.querySelectorAll('.decision-option')[0]`);
+  await waitFor(page, `document.querySelector('.decision-continue:not([disabled])')`);
+  await click(page, `document.querySelector('.decision-continue')`);
+  await sleep(300);
+
+  await keyDown(page, 'w');
+  await sleep(700);
+  const sB = await steps(page);
+  await click(page, btnByText('💡 Ask AstroBot'));
+  await waitFor(page, `document.querySelector('.astro-chatbot-panel')`);
+  const botA = await steps(page);
+  await sleep(1200);
+  const botB = await steps(page);
+  await keyUp(page, 'w');
+  check('opening AstroBot stops footsteps while the key is still held', sB > lockC && botB === botA, { sB, botA, botB });
+  await click(page, `document.querySelector('.astro-chatbot-close')`);
+  await sleep(300);
+
+  await keyDown(page, 'w');
+  await sleep(700);
+  const sU = await steps(page);
+  await click(page, `document.querySelector('.gameplay-back-button')`);
+  await waitFor(page, `!document.querySelector('.gameplay-page')`, 5000);
+  const goneA = await steps(page);
+  await sleep(1200);
+  const goneB = await steps(page);
+  await keyUp(page, 'w');
+  check('leaving the mission (unmount) stops footsteps', sU > botB && goneB === goneA, { sU, goneA, goneB });
+
+  await click(page, byAria('Start First Day on Mars'));
+  await waitFor(page, `document.querySelector('.gameplay-page')`, 15_000);
+  const newA = await steps(page);
+  await sleep(1200);
+  check('mission restarted: no footsteps until the astronaut moves', (await steps(page)) === newA, { newA });
+  await page.close();
+}
+
+async function level3AndAvatar(browser) {
+  current = 'level-3+avatar+brief';
+  const page = await openPage(browser);
+  await navigate(page, `${BASE}?audioDebug=1`);
+  await evaluate(page, progress(['level-1-first-day', 'level-2-power-crisis']));
+  await page.send('Page.reload');
+  await waitFor(page, `window.__asterAudio`, 15_000);
+  await click(page, `document.querySelector('.hero-cta')`);
+  await waitFor(page, `document.querySelectorAll('.avatar-picker__grid button').length > 2`);
+  const name = await evaluate(page, `document.querySelectorAll('.avatar-picker__grid button')[2].querySelector('.avatar-card__copy strong')?.textContent.trim()`);
+  await click(page, `document.querySelectorAll('.avatar-picker__grid button')[2]`);
+  await sleep(500);
+  check('picking a different avatar updates the Confirm button', Boolean(name) && (await evaluate(page, `${btnByText('Confirm')}?.textContent.includes(${JSON.stringify(name ?? '')})`)), { name });
+  await click(page, btnByText('Confirm'));
+  await waitFor(page, byAria('Start Oxygen Emergency'));
+  await click(page, byAria('Start Oxygen Emergency'));
+  await waitFor(page, `document.querySelector('.gameplay-page')`, 15_000);
+  check('chosen avatar shown in the mission HUD', await evaluate(page, `document.querySelector('.gameplay-cadet')?.textContent.includes(${JSON.stringify(name ?? '')})`), { name });
+  check('Level 3 renders the 3D scene (no WebGL fallback)', await evaluate(page, `Boolean(document.querySelector('.gameplay-page canvas')) && !document.body.textContent.includes('preview unavailable')`));
+  await screenshot(page, 'desktop-level3-avatar');
+  for (let i = 0; i < 3; i += 1) await playEvent(page, 0);
+  const done = await waitFor(page, `!document.querySelector('.gameplay-page')`, 5000);
+  const a = await audio(page);
+  check('Level 3 completes: mission-complete + brief-open, ambience stopped', done && a.stats.playCounts['mission-complete'] === 1 && a.stats.playCounts['brief-open'] === 1 && a.snap.ambienceSource === 'none', a.stats.playCounts);
+  await screenshot(page, 'desktop-mission-brief');
+  await page.close();
+}
+
+async function hotspotsAndRocket(browser, model) {
+  current = 'hotspots+rocket';
+  const page = await openPage(browser);
+  await navigate(page, `${BASE}?audioDebug=1`);
+  check('entered Level 1', await enterMission(page, 'First Day on Mars'));
+  await sleep(600);
+  await screenshot(page, 'desktop-spawn-terrain');
+  const restart = async () => {
+    await click(page, `document.querySelector('.gameplay-back-button')`);
+    await waitFor(page, byAria('Start First Day on Mars'));
+    await click(page, byAria('Start First Day on Mars'));
+    await waitFor(page, `document.querySelector('.gameplay-page [data-nearby-hotspot]')`, 15_000);
+    await sleep(500);
+  };
+  let firstRun = true;
+  for (const h of model.cfg.HOTSPOTS) {
+    if (!firstRun) await restart();
+    firstRun = false;
+    const plan = planPath(model, (x, z) => model.math.findNearestInteractable({ x, z }, model.cfg.HOTSPOTS) === h.id && Math.hypot(x - h.x, z - h.z) <= h.interactRadius - 0.5);
+    if (!plan) {
+      check(`path exists to ${h.id}`, false, 'planner found no path');
+      continue;
+    }
+    const before = (await audio(page)).stats.playCounts;
+    await walk(page, plan);
+    const reached = await waitFor(page, `${nearbyAttr} === ${JSON.stringify(h.id)}`, 2000);
+    const after = (await audio(page)).stats.playCounts;
+    const seconds = plan.segments.reduce((t, s) => t + s.ms, 0) / 1000;
+    check(`walked to "${h.id}" with real key holds; the scene reports it nearby`, reached, { got: await evaluate(page, nearbyAttr), segments: plan.segments.length, seconds });
+    check(`proximity ping and footsteps on the way to "${h.id}"`, (after['proximity-scanner'] ?? 0) > (before['proximity-scanner'] ?? 0) && (after.footstep ?? 0) > (before.footstep ?? 0), { ping: [before['proximity-scanner'] ?? 0, after['proximity-scanner'] ?? 0], steps: [before.footstep ?? 0, after.footstep ?? 0] });
+  }
+  await restart();
+  const rocket = model.cfg.DECORATIVE_OBSTACLES?.[0];
+  const rocketPlan = rocket && planPath(model, (x, z) => Math.hypot(x - rocket.x, z - rocket.z) <= 2.6);
+  check('rocket exists in the scene config and is reachable', Boolean(rocketPlan), rocket);
+  if (rocketPlan) {
+    await walk(page, rocketPlan);
+    await sleep(400);
+    await screenshot(page, 'desktop-rocket-landing-zone');
+  }
+  await page.close();
+}
+
+/** Replays a plan through the scene's own physics at 60 fps (as PlayerRig does) and returns where it ends. */
+function simulatePlan(model, plan) {
+  const { cfg, math } = model;
+  let pos = { ...cfg.PLAYER_SPAWN };
+  const DIR_OF = { w: 'up', s: 'down', a: 'left', d: 'right' };
+  for (const seg of plan.segments) {
+    const input = math.createInputState();
+    seg.keys.forEach((k) => { input[DIR_OF[k]] = true; });
+    const dir = math.screenToWorld(math.readInputVector(input));
+    const frames = Math.round((seg.ms / 1000) * 60);
+    for (let f = 0; f < frames; f += 1) {
+      pos = math.resolveCollisions(math.stepPosition(pos, dir, cfg.PLAYER_SPEED, 1 / 60), cfg.OBSTACLES, cfg.PLAYER_RADIUS, cfg.PLAYER_BOUNDS);
+    }
+  }
+  return { pos, nearby: math.findNearestInteractable(pos, cfg.HOTSPOTS) };
+}
+
+if ('plan-only' in args) {
+  const model = await loadSceneModel();
+  let ok = true;
+  for (const h of model.cfg.HOTSPOTS) {
+    const plan = planPath(model, (x, z) => model.math.findNearestInteractable({ x, z }, model.cfg.HOTSPOTS) === h.id && Math.hypot(x - h.x, z - h.z) <= h.interactRadius - 0.5);
+    const sim = plan && simulatePlan(model, plan);
+    ok &&= Boolean(sim && sim.nearby === h.id);
+    console.log(`${sim?.nearby === h.id ? 'OK  ' : 'FAIL'} ${h.id.padEnd(15)} ${plan ? `${plan.segments.length} segments, ${(plan.segments.reduce((t, s) => t + s.ms, 0) / 1000).toFixed(1)} s → sim ends (${sim.pos.x.toFixed(2)}, ${sim.pos.z.toFixed(2)}) nearby=${sim.nearby}` : 'NO PATH'}`);
+  }
+  console.log(`obstacles: ${model.cfg.OBSTACLES.length}, rocket: ${JSON.stringify(model.cfg.DECORATIVE_OBSTACLES)}`);
+  process.exit(ok ? 0 : 1);
 }
 
 // ---------------------------------------------------------------------------
@@ -478,7 +843,19 @@ try {
   console.log(`Browser: ${version.Browser}  ·  App: ${BASE}\n`);
   const browser = new CDP(version.webSocketDebuggerUrl);
   await browser.ready;
-  for (const scenario of [desktopFlow, warningScenario, stabilizationAndAstroBot, (b) => assetFailure(b, 404), (b) => assetFailure(b, 'format'), noWebAudio, mobileFlow]) {
+  const model = await loadSceneModel().catch((e) => {
+    console.log(`Scene model unavailable (${e.message}); hotspot walks skipped.`);
+    return null;
+  });
+  const all = {
+    desktopFlow, warningScenario, stabilizationAndAstroBot, walkingFootsteps, level3AndAvatar,
+    ...(model ? { hotspotsAndRocket: (b) => hotspotsAndRocket(b, model) } : {}),
+    missingAsset: (b) => assetFailure(b, 404), unsupportedFormat: (b) => assetFailure(b, 'format'), noWebAudio, mobileFlow,
+  };
+  // --only name1,name2 runs a subset (for debugging); default: everything.
+  const wanted = args.only ? new Set(String(args.only).split(',')) : null;
+  const scenarios = Object.entries(all).filter(([name]) => !wanted || wanted.has(name)).map(([, fn]) => fn);
+  for (const scenario of scenarios) {
     try {
       await scenario(browser);
     } catch (e) {
