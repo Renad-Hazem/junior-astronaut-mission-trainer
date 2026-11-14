@@ -1,28 +1,36 @@
-import { useEffect, useRef, useSyncExternalStore, type RefObject } from 'react';
-import { createInputState, type InputState } from './sceneMath';
+import { useEffect, useRef, useSyncExternalStore, type RefObject } from "react";
+import { createInputState, type InputState } from "./sceneMath";
 
 const KEY_TO_DIRECTION: Readonly<Record<string, keyof InputState>> = {
-  KeyW: 'up',
-  ArrowUp: 'up',
-  KeyS: 'down',
-  ArrowDown: 'down',
-  KeyA: 'left',
-  ArrowLeft: 'left',
-  KeyD: 'right',
-  ArrowRight: 'right',
+  KeyW: "up",
+  ArrowUp: "up",
+  KeyS: "down",
+  ArrowDown: "down",
+  KeyA: "left",
+  ArrowLeft: "left",
+  KeyD: "right",
+  ArrowRight: "right",
 };
 
-const INTERACT_CODE = 'KeyE';
+const INTERACT_CODE = "KeyE";
 
 function isEditableTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
   if (target.isContentEditable) return true;
-  return target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT';
+  return (
+    target.tagName === "INPUT" ||
+    target.tagName === "TEXTAREA" ||
+    target.tagName === "SELECT"
+  );
 }
 
 function isPageTarget(target: EventTarget | null): boolean {
-  return target === null || target === document.body || target === document.documentElement
-    || target === document;
+  return (
+    target === null ||
+    target === document.body ||
+    target === document.documentElement ||
+    target === document
+  );
 }
 
 /**
@@ -30,7 +38,9 @@ function isPageTarget(target: EventTarget | null): boolean {
  * and fires `onInteract` exactly once per physical E press. Holding E or
  * OS key-repeat never fires again until the key is released.
  */
-export function useSceneKeyboard(onInteract: () => void): RefObject<InputState> {
+export function useSceneKeyboard(
+  onInteract: () => void,
+): RefObject<InputState> {
   const inputRef = useRef<InputState>(createInputState());
   const interactRef = useRef(onInteract);
 
@@ -58,7 +68,8 @@ export function useSceneKeyboard(onInteract: () => void): RefObject<InputState> 
       if (dir) {
         // Stop arrow keys scrolling the page while playing, but leave focused
         // UI controls (owned by the page) with their native behaviour.
-        if (event.code.startsWith('Arrow') && isPageTarget(event.target)) event.preventDefault();
+        if (event.code.startsWith("Arrow") && isPageTarget(event.target))
+          event.preventDefault();
         held.add(event.code);
         sync();
         return;
@@ -87,15 +98,15 @@ export function useSceneKeyboard(onInteract: () => void): RefObject<InputState> 
       if (document.hidden) reset();
     };
 
-    window.addEventListener('keydown', onKeyDown);
-    window.addEventListener('keyup', onKeyUp);
-    window.addEventListener('blur', reset);
-    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp);
+    window.addEventListener("blur", reset);
+    document.addEventListener("visibilitychange", onVisibility);
     return () => {
-      window.removeEventListener('keydown', onKeyDown);
-      window.removeEventListener('keyup', onKeyUp);
-      window.removeEventListener('blur', reset);
-      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keyup", onKeyUp);
+      window.removeEventListener("blur", reset);
+      document.removeEventListener("visibilitychange", onVisibility);
       reset();
     };
   }, []);
@@ -103,31 +114,39 @@ export function useSceneKeyboard(onInteract: () => void): RefObject<InputState> 
   return inputRef;
 }
 
-const COARSE_QUERY = '(pointer: coarse)';
+const COARSE_QUERY = "(pointer: coarse)";
 
 function subscribeCoarse(callback: () => void): () => void {
-  if (typeof window === 'undefined' || !window.matchMedia) return () => {};
-  const mql = window.matchMedia(COARSE_QUERY);
-  mql.addEventListener('change', callback);
-  return () => mql.removeEventListener('change', callback);
+  if (typeof window === "undefined") return () => {};
+
+  const mql = window.matchMedia?.(COARSE_QUERY);
+  const update = () => callback();
+
+  mql?.addEventListener?.("change", update);
+  window.addEventListener("touchstart", update, { passive: true });
+
+  return () => {
+    mql?.removeEventListener?.("change", update);
+    window.removeEventListener("touchstart", update);
+  };
 }
 
 function getCoarse(): boolean {
-  return typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia(COARSE_QUERY).matches;
+  if (typeof window === "undefined") return false;
+
+  return window.matchMedia?.("(pointer: coarse)").matches === true;
 }
 
-/** True on touch-first devices, used to show on-screen movement controls. */
 export function useCoarsePointer(): boolean {
   return useSyncExternalStore(subscribeCoarse, getCoarse, () => false);
 }
-
 /** Returns true when a WebGL context can be created in this browser. */
 export function detectWebGL(): boolean {
   try {
-    const canvas = document.createElement('canvas');
-    const gl = canvas.getContext('webgl2') ?? canvas.getContext('webgl');
+    const canvas = document.createElement("canvas");
+    const gl = canvas.getContext("webgl2") ?? canvas.getContext("webgl");
     // Release the probe context immediately so it does not count against the browser limit.
-    gl?.getExtension('WEBGL_lose_context')?.loseContext();
+    gl?.getExtension("WEBGL_lose_context")?.loseContext();
     return !!gl;
   } catch {
     return false;
