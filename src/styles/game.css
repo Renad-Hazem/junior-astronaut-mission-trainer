@@ -1890,3 +1890,29 @@
 }
 
 
+
+/* Mobile responsive avatar banner */
+@media (max-width: 640px) {
+  .avatar-custom-hero-banner {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.8rem;
+    padding: 1rem;
+    text-align: center;
+  }
+
+  .avatar-custom-hero-text strong {
+    font-size: 0.85rem;
+  }
+
+  .avatar-custom-hero-text span {
+    font-size: 0.75rem;
+    line-height: 1.5;
+  }
+
+  .avatar-custom-btn {
+    width: 100%;
+    white-space: normal;
+    font-size: 0.82rem;
+  }
+}
