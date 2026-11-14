@@ -11,7 +11,9 @@ import { DecisionPanel } from "../components/ui/DecisionPanel";
 import { AvatarIdentity } from "../components/ui/AvatarIdentity";
 import { TaskPrompt } from "../components/ui/TaskPrompt";
 import { AstroChatbot } from "../components/ui/AstroChatbot";
+import { AudioSettings } from "../components/ui/AudioSettings";
 import { BRAND } from "../components/ui/brand";
+import { installGlobalAudio, playSound, useGameplayAudio } from "../audio";
 import { generateContextualHint } from "../science/astroBotService";
 // import MarsScene from './__stubs__/MarsSceneAdapter'
 import MarsScene from "../scene/MarsScene";
@@ -33,6 +35,11 @@ const gameplayKeys = new Set([
   "arrowleft",
   "arrowright",
 ]);
+
+// App imports this page statically, so this runs at app start. It attaches the
+// passive gesture/visibility/menu-click listeners once (idempotent). Nothing plays
+// until the first user gesture. Move this to App.tsx if its owner prefers.
+installGlobalAudio();
 
 export function GameplayPage() {
   const store = useGameStore((state) => state);
@@ -85,6 +92,12 @@ export function GameplayPage() {
       window.removeEventListener("keydown", blockGameplayInput, true);
   }, [isInspectionUnlocked]);
 
+  // Sound only observes the game; it never changes resources or decisions.
+  const { observeRoot: observeAudioRoot } = useGameplayAudio({
+    sceneStatus: event?.sceneStatus ?? "normal",
+    inputLocked: isInspectionUnlocked || isChatOpen,
+  });
+
   if (!level || !event) {
     return (
       <div className="page error-panel">
@@ -97,6 +110,7 @@ export function GameplayPage() {
   }
 
   const inspect = (hotspot: HotspotId) => {
+    playSound("inspect-system");
     const labels: Record<HotspotId, string> = {
       habitat:
         "The sealed habitat keeps safe air and temperature around the crew.",
@@ -152,6 +166,7 @@ export function GameplayPage() {
 
   return (
     <div
+      ref={observeAudioRoot}
       className={`gameplay-page ${isInspectionUnlocked ? "gameplay-page--context-open" : ""}`}
     >
       <section className="gameplay-stage" aria-label="Mars mission gameplay">
@@ -168,6 +183,11 @@ export function GameplayPage() {
             highlightedHotspot={event.hotspotId}
             onInspect={inspect}
             inputLocked={isInspectionUnlocked || isChatOpen}
+            // AUDIO HANDOFF: once MarsSceneProps exposes
+            // `onMovementChange?: (moving: boolean) => void`, also destructure
+            // `onMovementChange` from useGameplayAudio above and add:
+            //   onMovementChange={onMovementChange}
+            // Footsteps stay silent until then (see src/audio/README.md).
           />
         </div>
 
@@ -175,6 +195,7 @@ export function GameplayPage() {
           <button
             className="gameplay-back-button"
             type="button"
+            data-audio="nav"
             onClick={store.returnToLibrary}
           >
             <span aria-hidden="true">←</span>
@@ -186,6 +207,7 @@ export function GameplayPage() {
             <span className="signal">
               <i /> {BRAND.siteName} · LOCAL SESSION
             </span>
+            <AudioSettings />
             <button
               type="button"
               className="astrobot-command-btn"

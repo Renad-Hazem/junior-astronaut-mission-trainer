@@ -1,0 +1,173 @@
+/* Audio settings — isolated styles. Uses theme tokens from theme.css only. */
+
+.audio-settings {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+
+.audio-settings__toggle {
+  width: 44px;
+  height: 44px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgba(85, 189, 235, 0.35);
+  border-radius: 12px;
+  background: rgba(17, 24, 78, 0.7);
+  color: var(--white);
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.audio-settings__toggle:hover {
+  border-color: var(--blue-500);
+  background: rgba(40, 85, 139, 0.76);
+}
+
+.audio-settings__toggle--muted {
+  border-color: rgba(255, 122, 108, 0.45);
+}
+
+.audio-settings__toggle:focus-visible,
+.audio-settings__panel button:focus-visible,
+.audio-settings__panel input:focus-visible {
+  outline: 3px solid var(--yellow-400);
+  outline-offset: 2px;
+}
+
+/* Portalled to <body>; top/left/width/max-height are set inline from the button's position.
+   Above the HUD (10–30), below the AstroBot overlay (150). */
+.audio-settings__panel {
+  position: fixed;
+  z-index: 120;
+  overflow-y: auto;
+  display: grid;
+  gap: 0.7rem;
+  padding: 0.9rem 1rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(8, 13, 45, 0.96);
+  box-shadow: var(--shadow);
+  color: var(--white);
+  text-align: left;
+  animation: audio-panel-in 140ms ease-out;
+}
+
+@keyframes audio-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .audio-settings__panel {
+    animation: none;
+  }
+}
+
+.audio-settings__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.audio-settings__header h2 {
+  margin: 0;
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+}
+
+.audio-settings__close {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 1.3rem;
+  cursor: pointer;
+}
+
+.audio-settings__close:hover {
+  color: var(--white);
+  background: rgba(40, 85, 139, 0.5);
+}
+
+.audio-settings__status {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.audio-settings__mute {
+  min-height: 40px;
+  padding: 0.45rem 0.8rem;
+  border: 1px solid rgba(85, 189, 235, 0.45);
+  border-radius: 10px;
+  background: rgba(40, 85, 139, 0.55);
+  color: var(--white);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.audio-settings__mute[aria-pressed='true'] {
+  border-color: rgba(255, 122, 108, 0.6);
+  background: rgba(255, 122, 108, 0.16);
+}
+
+.audio-settings__mute:disabled,
+.audio-settings__slider input:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.audio-settings__slider {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 0.15rem 0.6rem;
+}
+
+.audio-settings__slider label {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.audio-settings__slider label small {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
+.audio-settings__slider input {
+  width: 100%;
+  min-height: 28px;
+  accent-color: var(--blue-500);
+  cursor: pointer;
+}
+
+.audio-settings__slider output {
+  min-width: 3ch;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.audio-settings__credit {
+  margin: 0.1rem 0 0;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.68rem;
+  line-height: 1.45;
+}
