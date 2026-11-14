@@ -40,6 +40,7 @@ function isPageTarget(target: EventTarget | null): boolean {
  */
 export function useSceneKeyboard(
   onInteract: () => void,
+  inputLocked = false,
 ): RefObject<InputState> {
   const inputRef = useRef<InputState>(createInputState());
   const interactRef = useRef(onInteract);
@@ -62,6 +63,7 @@ export function useSceneKeyboard(
     };
 
     const onKeyDown = (event: KeyboardEvent) => {
+      if (inputLocked) return;
       if (event.ctrlKey || event.metaKey || event.altKey) return;
       if (isEditableTarget(event.target)) return;
       const dir = KEY_TO_DIRECTION[event.code];
@@ -109,7 +111,7 @@ export function useSceneKeyboard(
       document.removeEventListener("visibilitychange", onVisibility);
       reset();
     };
-  }, []);
+  }, [inputLocked]);
 
   return inputRef;
 }

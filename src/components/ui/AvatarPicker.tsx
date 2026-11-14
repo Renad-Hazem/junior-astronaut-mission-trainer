@@ -58,11 +58,11 @@ export function AvatarPicker({ initialAvatarId, onConfirm, onCancel }: AvatarPic
           <header className="avatar-picker__header">
             <span className="eyebrow">CADET CREW ROSTER</span>
             <h2 id="avatar-picker-title">Choose Your Astronaut</h2>
-            <p id="avatar-picker-description">Pick an explorer or customize your own spacesuit with camera or photo to represent you at Aster Base.</p>
+            <p id="avatar-picker-description">Pick an explorer or add a local photo to your own spacesuit at ASTER BASE.</p>
             <div className="avatar-custom-hero-banner">
               <div className="avatar-custom-hero-text">
                 <strong>Want to see YOUR face inside the astronaut helmet?</strong>
-                <span>Open your camera or pick a picture to play as yourself on Mars!</span>
+                <span>The camera is optional and starts only after permission. Photos stay in this browser.</span>
               </div>
               <button
                 type="button"
@@ -117,7 +117,7 @@ export function AvatarPicker({ initialAvatarId, onConfirm, onCancel }: AvatarPic
             })}
           </div>
 
-          <div className="avatar-picker__note"><span aria-hidden="true">✦</span> Real-time camera & photo visors are rendered across both HUDs and interactive 3D Mars exploration.</div>
+          <div className="avatar-picker__note"><span aria-hidden="true">✦</span> Your selected astronaut appears in menus, the HUD, and 3D Mars exploration. Custom photos remain local to this browser.</div>
           <div className="avatar-picker__actions">
             <button type="button" className="secondary-button" onClick={onCancel}>Back</button>
             <button type="button" className="primary-button" onClick={() => onConfirm(draftAvatarId)}>Confirm {selected.displayName} <span aria-hidden="true">→</span></button>

@@ -33,6 +33,7 @@ export interface MarsSceneProps {
   highlightedHotspot?: HotspotId;
   onInspect?: (hotspotId: HotspotId) => void;
   reducedMotion?: boolean;
+  inputLocked?: boolean;
 }
 
 const containerStyle: CSSProperties = {
@@ -96,6 +97,7 @@ export default function MarsScene({
   highlightedHotspot,
   onInspect,
   reducedMotion = false,
+  inputLocked = false,
 }: MarsSceneProps) {
   const [webGLAvailable] = useState(detectWebGL);
   const [nearby, setNearby] = useState<HotspotId | null>(null);
@@ -108,16 +110,23 @@ export default function MarsScene({
     onInspectRef.current = onInspect;
   }, [onInspect]);
 
+  useEffect(() => {
+    if (inputLocked) {
+      Object.assign(touchRef.current, createInputState());
+    }
+  }, [inputLocked]);
+
   const inspect = useCallback((id: HotspotId) => {
+    if (inputLocked) return;
     onInspectRef.current?.(id);
-  }, []);
+  }, [inputLocked]);
 
   const inspectNearby = useCallback(() => {
     const id = nearbyRef.current;
     if (id) inspect(id);
   }, [inspect]);
 
-  const keyboardRef = useSceneKeyboard(inspectNearby);
+  const keyboardRef = useSceneKeyboard(inspectNearby, inputLocked);
   const inputs = useMemo(() => [keyboardRef, touchRef], [keyboardRef]);
 
   const handleNearbyChange = useCallback((id: HotspotId | null) => {
@@ -127,9 +136,9 @@ export default function MarsScene({
 
   const handleTouchDirection = useCallback(
     (direction: keyof InputState, pressed: boolean) => {
-      touchRef.current[direction] = pressed;
+      touchRef.current[direction] = inputLocked ? false : pressed;
     },
-    [],
+    [inputLocked],
   );
 
   if (!webGLAvailable) {
@@ -189,6 +198,7 @@ export default function MarsScene({
             reducedMotion={reducedMotion}
             avatarId={avatarId}
             customPhotoUrl={customPhotoUrl}
+            inputLocked={inputLocked}
             inputs={inputs}
             onNearbyChange={handleNearbyChange}
           />
@@ -222,6 +232,7 @@ export default function MarsScene({
           onDirection={handleTouchDirection}
           onInspect={inspectNearby}
           canInspect={nearby !== null}
+          inputLocked={inputLocked}
         />
       )}
     </div>

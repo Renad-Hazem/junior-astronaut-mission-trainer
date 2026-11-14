@@ -8,7 +8,7 @@ interface AvatarPreviewProps {
 }
 
 export function AvatarPreview({ avatar, compact = false, customPhotoUrl }: AvatarPreviewProps) {
-  const showPhoto = Boolean(customPhotoUrl && (avatar.id === 'avatar-custom' || avatar.id === avatar.id))
+  const showPhoto = Boolean(customPhotoUrl && avatar.id === 'avatar-custom')
 
   return (
     <div

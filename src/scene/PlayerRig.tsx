@@ -33,6 +33,7 @@ import {
 interface PlayerRigProps {
   levelId: LevelId;
   reducedMotion: boolean;
+  inputLocked: boolean;
   avatarId: AvatarId;
   customPhotoUrl?: string | null;
   /** Input sources (keyboard, touch); a direction is active if any source holds it. */
@@ -47,6 +48,7 @@ interface PlayerRigProps {
 export default function PlayerRig({
   levelId,
   reducedMotion,
+  inputLocked,
   avatarId,
   customPhotoUrl,
   inputs,
@@ -70,12 +72,14 @@ export default function PlayerRig({
   useFrame((state, delta) => {
     const merged = mergedInputRef.current;
     merged.up = merged.down = merged.left = merged.right = false;
-    for (const source of inputs) {
-      const s = source.current;
-      merged.up ||= s.up;
-      merged.down ||= s.down;
-      merged.left ||= s.left;
-      merged.right ||= s.right;
+    if (!inputLocked) {
+      for (const source of inputs) {
+        const s = source.current;
+        merged.up ||= s.up;
+        merged.down ||= s.down;
+        merged.left ||= s.left;
+        merged.right ||= s.right;
+      }
     }
 
     const direction = screenToWorld(readInputVector(merged));

@@ -5,6 +5,7 @@ interface TouchControlsProps {
   onDirection: (direction: keyof InputState, pressed: boolean) => void;
   onInspect: () => void;
   canInspect: boolean;
+  inputLocked?: boolean;
 }
 
 const BUTTON_SIZE = 32;
@@ -53,10 +54,12 @@ export default function TouchControls({
   onDirection,
   onInspect,
   canInspect,
+  inputLocked = false,
 }: TouchControlsProps) {
   const press =
     (dir: keyof InputState) => (event: PointerEvent<HTMLButtonElement>) => {
       event.preventDefault();
+      if (inputLocked) return;
       event.currentTarget.setPointerCapture(event.pointerId);
       onDirection(dir, true);
     };
@@ -69,6 +72,7 @@ export default function TouchControls({
           <button
             key={dir}
             type="button"
+            disabled={inputLocked}
             aria-label={label}
             style={{
               ...buttonStyle,
@@ -88,7 +92,7 @@ export default function TouchControls({
       <button
         type="button"
         onClick={onInspect}
-        disabled={!canInspect}
+        disabled={inputLocked || !canInspect}
         style={{
           ...buttonStyle,
           position: "absolute",
@@ -99,7 +103,7 @@ export default function TouchControls({
           height: 64,
           fontSize: 16,
           fontWeight: 700,
-          opacity: canInspect ? 1 : 0.45,
+          opacity: !inputLocked && canInspect ? 1 : 0.45,
           display: "none",
         }}
       >
