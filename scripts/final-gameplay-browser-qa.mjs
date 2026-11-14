@@ -193,7 +193,7 @@ try {
   }
   const chooseOptimalAndContinue = async () => {
     const before = await storeState(`({history:s.choiceHistory.length,event:s.currentEventIndex})`)
-    const optimalIndex = await storeState(`s.currentLevel.events[s.currentEventIndex].choices.findIndex(choice=>choice.isOptimalHint)`) 
+    const optimalIndex = await storeState(`s.currentLevel.events[s.currentEventIndex].choices.findIndex(choice=>choice.isOptimalHint)`)
     assert(optimalIndex >= 0, 'Current event has no optimal test choice')
     await evaluate(`(()=>{const button=document.querySelectorAll('.decision-option')[${optimalIndex}];button.click();button.click();return true})()`)
     await wait(80)
