@@ -5,29 +5,45 @@ export interface BotSource {
   title: string
   dataset?: string
   url: string
-  score?: number
 }
 
 export interface BotResponse {
   answer: string
-  grounded: boolean
-  live: boolean
   sources: BotSource[]
   jargon: string[]
-  backend: 'live-rag' | 'client-kb'
+  backend: 'connected-service' | 'client-kb'
   unlockedBadgeId?: string
 }
 
+function normalizeForMatching(text: string): string {
+  return text.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
+}
+
+function containsKeyword(text: string, keyword: string): boolean {
+  const normalizedText = ` ${normalizeForMatching(text)} `
+  const normalizedKeyword = ` ${normalizeForMatching(keyword)} `
+  return normalizedText.includes(normalizedKeyword)
+}
+
+function asksForLiveCurrent(text: string): boolean {
+  return ['right now', 'currently', 'current conditions', 'live data', 'live numbers', 'live telemetry'].some(
+    (keyword) => containsKeyword(text, keyword),
+  )
+}
+
+const LIVE_DATA_UNAVAILABLE =
+  'I do not have live current telemetry. The available library uses saved snapshots and general NASA explanations, not real-time numbers.'
+
 function detectBadgeForQuery(text: string): string | undefined {
-  const lower = text.toLowerCase()
-  if (lower.includes('black hole') || lower.includes('star') || lower.includes('galaxy') || lower.includes('supernova')) return 'deep-space'
-  if (lower.includes('rocket') || lower.includes('launch') || lower.includes('engine') || lower.includes('thrust') || lower.includes('orbit')) return 'rocket-engineer'
-  if (lower.includes('food') || lower.includes('sleep') || lower.includes('float') || lower.includes('astronaut') || lower.includes('suit') || lower.includes('spacewalk')) return 'astronaut-cadet'
-  if (lower.includes('sun') || lower.includes('solar') || lower.includes('cme') || lower.includes('flare') || lower.includes('aurora')) return 'solar-physicist'
-  if (lower.includes('telescope') || lower.includes('webb') || lower.includes('jwst') || lower.includes('hubble')) return 'cosmic-observer'
-  if (lower.includes('planet') || lower.includes('mars') || lower.includes('jupiter') || lower.includes('saturn') || lower.includes('venus') || lower.includes('moon')) return 'planetary-scout'
-  if (lower.includes('plant') || lower.includes('seed') || lower.includes('hydroponic') || lower.includes('alien') || lower.includes('life')) return 'space-biologist'
-  if (lower.includes('oxygen') || lower.includes('water') || lower.includes('eclss') || lower.includes('radiation') || lower.includes('moxie') || lower.includes('regolith')) return 'life-support'
+  const matchesAny = (keywords: string[]) => keywords.some((keyword) => containsKeyword(text, keyword))
+  if (matchesAny(['life support', 'eclss', 'oxygen', 'water recycling', 'air recycling', 'radiation shield', 'moxie', 'regolith'])) return 'life-support'
+  if (matchesAny(['black hole', 'star', 'stars', 'galaxy', 'supernova'])) return 'deep-space'
+  if (matchesAny(['rocket', 'launch', 'engine', 'thrust', 'orbit'])) return 'rocket-engineer'
+  if (matchesAny(['food', 'sleep', 'float', 'astronaut', 'suit', 'spacewalk'])) return 'astronaut-cadet'
+  if (matchesAny(['sun', 'solar', 'space weather', 'cme', 'flare', 'aurora'])) return 'solar-physicist'
+  if (matchesAny(['telescope', 'webb', 'jwst', 'hubble'])) return 'cosmic-observer'
+  if (matchesAny(['planet', 'mars', 'jupiter', 'saturn', 'venus', 'moon'])) return 'planetary-scout'
+  if (matchesAny(['plant', 'seed', 'hydroponic', 'alien life', 'astrobiology', 'exoplanet'])) return 'space-biologist'
   return undefined
 }
 
@@ -71,7 +87,7 @@ export const GENERAL_SPACE_KNOWLEDGE: {
     jargon: ['MICROGRAVITY: The near-weightless environment experienced while in free-fall orbit around Earth.', 'BONE DENSITY LOSS: The reduction of bone mass in space that astronauts prevent with daily exercise.'],
   },
   {
-    keywords: ['sun', 'solar storm', 'solar flare', 'cme', 'aurora', 'northern lights', 'magnetic field', 'corona'],
+    keywords: ['sun', 'space weather', 'solar storm', 'solar flare', 'cme', 'aurora', 'northern lights', 'magnetic field', 'corona'],
     badgeId: 'solar-physicist',
     title: 'The Sun & Space Weather',
     answer:
@@ -79,6 +95,16 @@ export const GENERAL_SPACE_KNOWLEDGE: {
     source: 'NASA Heliophysics & Space Weather Database (DONKI)',
     url: 'https://science.nasa.gov/heliophysics/',
     jargon: ['CORONAL MASS EJECTION (CME): A colossal burst of solar wind and magnetic fields shot from the Sun.', 'AURORA: Beautiful dancing light displays in polar skies created when solar particles collide with Earth’s atmosphere.'],
+  },
+  {
+    keywords: ['life support', 'eclss', 'oxygen generation', 'water recycling', 'air recycling'],
+    badgeId: 'life-support',
+    title: 'Environmental Control and Life Support Systems',
+    answer:
+      'Spacecraft life-support systems manage breathable air and clean water. NASA’s ECLSS includes air revitalization, oxygen generation, and water recovery equipment. On the International Space Station, the water system treats wastewater to strict purity standards so it can be reused, reducing the amount launched from Earth.',
+    source: 'NASA Environmental Control and Life Support Systems',
+    url: 'https://www.nasa.gov/reference/environmental-control-and-life-support-systems-eclss/',
+    jargon: ['ECLSS: Environmental Control and Life Support System.', 'AIR REVITALIZATION: Equipment that monitors and cleans cabin air.'],
   },
   {
     keywords: ['telescope', 'james webb', 'jwst', 'hubble', 'deep field', 'infrared', 'lens'],
@@ -111,7 +137,7 @@ export const GENERAL_SPACE_KNOWLEDGE: {
     jargon: ['SUPERNOVA: The titanic explosion of a massive dying star that outshines entire galaxies.', 'LIGHT-YEAR: The distance light travels in one Earth year—about 9.46 trillion kilometers (5.88 trillion miles)!'],
   },
   {
-    keywords: ['alien', 'life', 'extraterrestrial', 'exoplanet', 'goldilocks', 'europa', 'enceladus', 'habitable'],
+    keywords: ['alien life', 'extraterrestrial', 'exoplanet', 'goldilocks', 'europa', 'enceladus', 'habitable', 'search for life', 'space life'],
     badgeId: 'space-biologist',
     title: 'Astrobiology & Hunting for Habitable Worlds',
     answer:
@@ -159,26 +185,30 @@ export const SPACE_GLOSSARY: Record<string, string> = {
  * Client-side BM25-style keyword search over the 92 exported NASA documents.
  */
 function searchClientKnowledge(query: string, maxResults = 3): { doc: KnowledgeDoc; score: number }[] {
-  const queryTokens = query
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, '')
+  const stopWords = new Set(['about', 'and', 'can', 'does', 'for', 'from', 'have', 'hello', 'help', 'how', 'please', 'should', 'start', 'that', 'the', 'their', 'there', 'these', 'they', 'this', 'what', 'when', 'where', 'which', 'who', 'why', 'with', 'would', 'your'])
+  const queryTokens = normalizeForMatching(query)
     .split(/\s+/)
-    .filter((t) => t.length > 2)
+    .filter((token) => token.length > 2 && !stopWords.has(token))
 
   if (queryTokens.length === 0) return []
+  if (queryTokens.length === 1 && ['life', 'mission', 'system', 'weather'].includes(queryTokens[0])) return []
 
   const scored = KNOWLEDGE.map((doc) => {
     let score = 0
-    const titleLower = doc.title.toLowerCase()
-    const textLower = doc.text.toLowerCase()
+    let matchedTokens = 0
+    const titleTokens = normalizeForMatching(doc.title).split(/\s+/)
+    const textTokens = normalizeForMatching(doc.text).split(/\s+/)
 
     for (const token of queryTokens) {
-      if (titleLower.includes(token)) score += 3.5
-      const matches = (textLower.match(new RegExp(token, 'g')) || []).length
-      score += Math.min(matches, 5) * 0.8
+      const titleMatches = titleTokens.filter((word) => word === token).length
+      const textMatches = textTokens.filter((word) => word === token).length
+      if (titleMatches + textMatches > 0) matchedTokens += 1
+      score += Math.min(titleMatches, 2) * 3.5
+      score += Math.min(textMatches, 5) * 0.8
     }
 
-    return { doc, score }
+    const coverage = matchedTokens / queryTokens.length
+    return { doc, score: coverage >= 0.5 ? score : 0 }
   })
     .filter((item) => item.score > 0)
     .sort((a, b) => b.score - a.score)
@@ -187,10 +217,9 @@ function searchClientKnowledge(query: string, maxResults = 3): { doc: KnowledgeD
 }
 
 function extractRelevantJargon(text: string): string[] {
-  const lower = text.toLowerCase()
   const found: string[] = []
   for (const [term, def] of Object.entries(SPACE_GLOSSARY)) {
-    if (lower.includes(term)) {
+    if (containsKeyword(text, term)) {
       found.push(`${term.toUpperCase()}: ${def}`)
     }
   }
@@ -199,14 +228,14 @@ function extractRelevantJargon(text: string): string[] {
 
 /**
  * Ask AstroBot with seamless fallback:
- * 1. Tries the FastAPI backend at /api/v1/ask-astro-bot
- * 2. If offline, runs in-browser grounded retrieval against the 92 NASA documents
+ * 1. Tries the optional FastAPI backend at /api/v1/ask-astro-bot.
+ * 2. If unavailable or unsourced, searches the bundled source library.
  */
 export async function askAstroBot(
   question: string,
   missionContext: string = 'Mars Base Aster Alpha'
 ): Promise<BotResponse> {
-  // 1. Try Live RAG Backend
+  // 1. Try the optional connected service. Unsourced answers are not displayed.
   try {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 2600)
@@ -225,14 +254,18 @@ export async function askAstroBot(
 
     if (res.ok) {
       const data = await res.json()
+      const sources = Array.isArray(data.sources)
+        ? data.sources.filter((source: BotSource) => source && typeof source.title === 'string' && /^https:\/\//.test(source.url))
+        : []
+      if (typeof data.answer !== 'string' || data.answer.trim().length === 0 || sources.length === 0) {
+        throw new Error('Connected service returned an answer without usable sources')
+      }
       const detectedBadge = detectBadgeForQuery(`${question} ${data.answer || ''}`)
       return {
-        answer: data.answer || 'AstroBot received telemetry from Aster Base.',
-        grounded: Boolean(data.grounded),
-        live: Boolean(data.live),
-        sources: Array.isArray(data.sources) ? data.sources : [],
+        answer: data.answer,
+        sources,
         jargon: Array.isArray(data.jargon) ? data.jargon : [],
-        backend: 'live-rag',
+        backend: 'connected-service',
         unlockedBadgeId: detectedBadge,
       }
     }
@@ -240,25 +273,49 @@ export async function askAstroBot(
     // Backend offline or timeout — fall through to client NASA knowledge engine
   }
 
-  // 2. Client-side Grounded RAG & AstroSpace Encyclopedia Fallback
-  const qLower = question.toLowerCase()
-
-  // First check broad AstroSpace encyclopedia for general space questions
+  // 2. Client-side source library fallback.
+  const wantsLiveCurrent = asksForLiveCurrent(question)
   const generalMatch = GENERAL_SPACE_KNOWLEDGE.find((item) =>
-    item.keywords.some((kw) => qLower.includes(kw))
+    item.keywords.some((keyword) => containsKeyword(question, keyword)),
   )
 
-  if (generalMatch) {
+  // Prefer dated snapshots over general encyclopedia copy when the cadet asks for current conditions.
+  const searchResults = searchClientKnowledge(question)
+  const snapshotMatch = searchResults.find(
+    (result) =>
+      /saved snapshot/i.test(result.doc.title) ||
+      /saved historical snapshot|does not describe current conditions/i.test(result.doc.text),
+  )
+
+  if (wantsLiveCurrent && snapshotMatch) {
+    const top = snapshotMatch.doc
+    const cleanSentences = top.text
+      .split(/(?<=[.!?])\s+/)
+      .slice(0, 3)
+      .join(' ')
     return {
-      answer: generalMatch.answer,
-      grounded: true,
-      live: false,
+      answer: `${LIVE_DATA_UNAVAILABLE} ${cleanSentences} Source: ${top.source}.`,
+      sources: [
+        {
+          title: top.title,
+          dataset: top.source,
+          url: top.url,
+        },
+      ],
+      jargon: extractRelevantJargon(`${question} ${top.text}`),
+      backend: 'client-kb',
+      unlockedBadgeId: detectBadgeForQuery(`${question} ${top.text}`),
+    }
+  }
+
+  if (wantsLiveCurrent && generalMatch) {
+    return {
+      answer: `${LIVE_DATA_UNAVAILABLE} ${generalMatch.answer}`,
       sources: [
         {
           title: generalMatch.title,
           dataset: generalMatch.source,
           url: generalMatch.url,
-          score: 0.95,
         },
       ],
       jargon: generalMatch.jargon,
@@ -267,8 +324,30 @@ export async function askAstroBot(
     }
   }
 
-  // Next check 92 exported NASA mission documents
-  const searchResults = searchClientKnowledge(question)
+  if (wantsLiveCurrent) {
+    return {
+      answer: LIVE_DATA_UNAVAILABLE,
+      sources: [],
+      jargon: extractRelevantJargon(question),
+      backend: 'client-kb',
+    }
+  }
+
+  if (generalMatch) {
+    return {
+      answer: generalMatch.answer,
+      sources: [
+        {
+          title: generalMatch.title,
+          dataset: generalMatch.source,
+          url: generalMatch.url,
+        },
+      ],
+      jargon: generalMatch.jargon,
+      backend: 'client-kb',
+      unlockedBadgeId: generalMatch.badgeId,
+    }
+  }
 
   if (searchResults.length > 0) {
     const top = searchResults[0].doc
@@ -281,14 +360,11 @@ export async function askAstroBot(
       .join(' ')
 
     return {
-      answer: `${cleanSentences} (Cadet Tip: Grounded in official ${top.source} documentation.)`,
-      grounded: true,
-      live: false,
+      answer: `${cleanSentences} Source: ${top.source}.`,
       sources: searchResults.map((r) => ({
         title: r.doc.title,
         dataset: r.doc.source,
         url: r.doc.url,
-        score: Math.min(0.95, 0.5 + r.score * 0.1),
       })),
       jargon,
       backend: 'client-kb',
@@ -296,23 +372,12 @@ export async function askAstroBot(
     }
   }
 
-  // Open-ended general space guidance for any custom curiosity
-  const detectedBadge = detectBadgeForQuery(question)
   return {
     answer:
-      `Welcome to Space Academy, Cadet! The cosmos is full of secrets waiting to be unlocked. You can ask me anything about how rockets launch, black holes, the James Webb telescope, what astronauts eat in microgravity, or how humanity will live on Mars. What mystery of the universe would you like to explore next?`,
-    grounded: true,
-    live: false,
-    sources: [
-      {
-        title: 'NASA Space Science & Human Spaceflight Academy',
-        dataset: 'NASA Science & Space Apps Challenge',
-        url: 'https://science.nasa.gov/',
-      },
-    ],
+      'I do not have enough source evidence in the available library to answer that reliably. Try asking a more specific question about Mars, life support, rockets, space weather, astronauts, or telescopes.',
+    sources: [],
     jargon: extractRelevantJargon(question),
     backend: 'client-kb',
-    unlockedBadgeId: detectedBadge,
   }
 }
 
