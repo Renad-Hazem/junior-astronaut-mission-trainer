@@ -1,4 +1,4 @@
-import { useMemo, useRef, type RefObject } from "react";
+import { useEffect, useMemo, useRef, type RefObject } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Texture, type Group } from "three";
 import { dampFactor } from "./sceneMath";
@@ -48,6 +48,8 @@ export default function Astronaut({
     };
     return tex;
   }, [customPhotoUrl]);
+
+  useEffect(() => () => photoTexture?.dispose(), [photoTexture]);
 
   const bodyRef = useRef<Group>(null);
   const leftLegRef = useRef<Group>(null);
@@ -115,6 +117,42 @@ export default function Astronaut({
           <boxGeometry args={[0.26, 0.18, 0.06]} />
           <meshStandardMaterial color={ACCENT} flatShading />
         </mesh>
+        {avatarId === "avatar-01" && (
+          <mesh position={[0, 1.2, 0.3]}>
+            <boxGeometry args={[0.13, 0.07, 0.04]} />
+            <meshStandardMaterial color="#fff2d6" emissive={ACCENT} emissiveIntensity={0.35} />
+          </mesh>
+        )}
+        {avatarId === "avatar-02" && (
+          <group position={[0.2, 1.82, 0]}>
+            <mesh position={[0, 0.1, 0]}>
+              <cylinderGeometry args={[0.015, 0.015, 0.2, 8]} />
+              <meshStandardMaterial color={ACCENT} />
+            </mesh>
+            <mesh position={[0, 0.22, 0]}>
+              <sphereGeometry args={[0.045, 8, 6]} />
+              <meshStandardMaterial color={ACCENT} emissive={ACCENT} emissiveIntensity={0.45} />
+            </mesh>
+          </group>
+        )}
+        {avatarId === "avatar-03" && (
+          <>
+            <mesh position={[-0.39, 1.2, 0]} rotation={[0, 0, Math.PI / 2]}>
+              <torusGeometry args={[0.105, 0.025, 6, 12]} />
+              <meshStandardMaterial color={ACCENT} />
+            </mesh>
+            <mesh position={[0.39, 1.2, 0]} rotation={[0, 0, Math.PI / 2]}>
+              <torusGeometry args={[0.105, 0.025, 6, 12]} />
+              <meshStandardMaterial color={ACCENT} />
+            </mesh>
+          </>
+        )}
+        {avatarId === "avatar-04" && (
+          <mesh position={[0, 0.78, 0.3]} rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[0.13, 0.035, 6, 14]} />
+            <meshStandardMaterial color={ACCENT} />
+          </mesh>
+        )}
         {/* Backpack (life support) on local -Z */}
         <mesh position={[0, 1.0, -0.32]}>
           <boxGeometry args={[0.46, 0.55, 0.22]} />

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { AstroChatbot } from '../components/ui/AstroChatbot'
 import { AvatarPicker } from '../components/ui/AvatarPicker'
+import { BRAND } from '../components/ui/brand'
 import { useGameStore } from '../game/uiAdapter'
 import { useAvatarSelection } from './useAvatarSelection'
 
@@ -19,7 +20,7 @@ export function HomePage() {
   return (
     <div className="home-page page">
       <header className="topbar">
-        <a className="brand" href="#main-content" aria-label="Mars Base home"><span className="brand-mark" aria-hidden="true">⌁</span><span>ASTER BASE<small>MISSION NETWORK</small></span></a>
+        <a className="brand" href="#main-content" aria-label={`${BRAND.siteName} home`}><span className="brand-mark" aria-hidden="true">⌁</span><span>{BRAND.siteName}<small>{BRAND.networkLabel}</small></span></a>
         <div className="home-topbar-actions">
           <button
             type="button"
@@ -27,10 +28,10 @@ export function HomePage() {
             onClick={() => setIsChatOpen(true)}
             title="Ask AstroBot anything about space before your mission"
           >
-            <span>🤖 Space AI Academy</span>
-            <small>Ask Anything</small>
+            <span>🤖 {BRAND.assistantName}</span>
+            <small>Source-linked space guide</small>
           </button>
-          <span className="signal"><i /> SIGNAL: STRONG</span>
+          <span className="signal"><i /> LOCAL TRAINER</span>
         </div>
       </header>
 
@@ -38,7 +39,7 @@ export function HomePage() {
         <div className="home-hero__content">
           <span className="eyebrow">WELCOME, FUTURE MARS CADET</span>
           <h1><span>MARS BASE</span>MISSION CONTROL</h1>
-          <p className="hero-subtitle">Junior Astronaut Mission Trainer</p>
+          <p className="hero-subtitle">{BRAND.descriptor}</p>
           <p className="hero-story">Aster Base needs a curious new Mission Controller. Explore the red planet, make smart choices, and discover how every life-support system works together.</p>
           <div className="home-hero-actions">
             <button type="button" className="primary-button hero-cta" onClick={() => setIsChoosingAvatar(true)}>
@@ -78,7 +79,7 @@ export function HomePage() {
         isOpen={isChatOpen}
         onClose={() => setIsChatOpen(false)}
         mode="pre-mission"
-        currentMissionContext="Pre-Flight Cadet Space Academy"
+        currentMissionContext={`${BRAND.siteName} pre-flight briefing`}
       />
     </div>
   )

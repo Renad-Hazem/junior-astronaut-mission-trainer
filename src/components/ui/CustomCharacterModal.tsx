@@ -21,9 +21,11 @@ export function CustomCharacterModal({
   onClear,
   onClose,
 }: CustomCharacterModalProps) {
-  const [activeTab, setActiveTab] = useState<'camera' | 'upload'>('camera')
+  const [activeTab, setActiveTab] = useState<'camera' | 'upload'>('upload')
+  const [cameraRequested, setCameraRequested] = useState(false)
   const [stream, setStream] = useState<MediaStream | null>(null)
   const [cameraError, setCameraError] = useState<string | null>(null)
+  const [photoError, setPhotoError] = useState<string | null>(null)
 
   // Raw source image (from camera snap or file upload)
   const [rawPhotoUrl, setRawPhotoUrl] = useState<string | null>(null)
@@ -45,14 +47,20 @@ export function CustomCharacterModal({
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const rawImageRef = useRef<HTMLImageElement | null>(null)
+  const dialogRef = useRef<HTMLDivElement>(null)
 
-  // Start webcam when camera tab is active and not adjusting
+  // Start webcam only after the child explicitly chooses Start Camera.
   useEffect(() => {
     let currentStream: MediaStream | null = null
+    let cancelled = false
+    const videoElement = videoRef.current
 
-    if (activeTab === 'camera' && !rawPhotoUrl) {
-      navigator.mediaDevices
-        ?.getUserMedia({
+    if (activeTab === 'camera' && cameraRequested && !rawPhotoUrl) {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        return
+      }
+
+      navigator.mediaDevices.getUserMedia({
           video: {
             facingMode: 'user',
             width: { ideal: 640 },
@@ -60,12 +68,16 @@ export function CustomCharacterModal({
           },
         })
         .then((mediaStream) => {
+          if (cancelled) {
+            mediaStream.getTracks().forEach((track) => track.stop())
+            return
+          }
           currentStream = mediaStream
           setStream(mediaStream)
           setCameraError(null)
-          if (videoRef.current) {
-            videoRef.current.srcObject = mediaStream
-            videoRef.current.play().catch(() => {})
+          if (videoElement) {
+            videoElement.srcObject = mediaStream
+            videoElement.play().catch(() => {})
           }
         })
         .catch((err) => {
@@ -77,11 +89,13 @@ export function CustomCharacterModal({
     }
 
     return () => {
+      cancelled = true
       if (currentStream) {
         currentStream.getTracks().forEach((track) => track.stop())
       }
+      if (videoElement) videoElement.srcObject = null
     }
-  }, [activeTab, rawPhotoUrl])
+  }, [activeTab, cameraRequested, rawPhotoUrl])
 
   // Stop camera stream when component unmounts
   useEffect(() => {
@@ -91,6 +105,41 @@ export function CustomCharacterModal({
       }
     }
   }, [stream])
+
+  useEffect(() => {
+    const dialog = dialogRef.current
+    if (!dialog) return
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    dialog.querySelector<HTMLElement>('button:not([disabled])')?.focus()
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        onClose()
+        return
+      }
+      if (event.key !== 'Tab') return
+      const focusable = [...dialog.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      )]
+      if (focusable.length === 0) return
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+
+    dialog.addEventListener('keydown', onKeyDown)
+    return () => {
+      dialog.removeEventListener('keydown', onKeyDown)
+      previousFocus?.focus()
+    }
+  }, [onClose])
 
   // Process and extract face onto canvas
   const processFaceExtraction = useCallback(
@@ -114,6 +163,7 @@ export function CustomCharacterModal({
 
   // Detect face on a new raw image
   const handleRawPhotoLoaded = async (dataUrl: string) => {
+    setPhotoError(null)
     setRawPhotoUrl(dataUrl)
     setIsDetectingFace(true)
 
@@ -133,6 +183,11 @@ export function CustomCharacterModal({
       }
       setSettings(initialSettings)
       processFaceExtraction(img, box, initialSettings)
+    }
+    img.onerror = () => {
+      setIsDetectingFace(false)
+      setRawPhotoUrl(null)
+      setPhotoError('That image could not be read. Please choose a JPG, PNG, or WebP photo.')
     }
     img.src = dataUrl
   }
@@ -179,13 +234,26 @@ export function CustomCharacterModal({
     const file = e.target.files?.[0]
     if (!file) return
 
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      setPhotoError('Please choose a JPG, PNG, or WebP photo.')
+      e.target.value = ''
+      return
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      setPhotoError('That photo is larger than 8 MB. Please choose a smaller image.')
+      e.target.value = ''
+      return
+    }
+
     const reader = new FileReader()
     reader.onload = () => {
       if (typeof reader.result === 'string') {
         handleRawPhotoLoaded(reader.result)
       }
     }
+    reader.onerror = () => setPhotoError('That photo could not be opened. Please choose another image.')
     reader.readAsDataURL(file)
+    e.target.value = ''
   }
 
   const handleConfirm = () => {
@@ -195,11 +263,32 @@ export function CustomCharacterModal({
     }
   }
 
+  const selectSource = (source: 'camera' | 'upload') => {
+    stream?.getTracks().forEach((track) => track.stop())
+    if (videoRef.current) videoRef.current.srcObject = null
+    setStream(null)
+    setCameraRequested(false)
+    setCameraError(null)
+    setPhotoError(null)
+    setActiveTab(source)
+  }
+
+  const requestCamera = () => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setCameraError('This browser does not provide camera access. You can still upload a photo.')
+      setCameraRequested(true)
+      return
+    }
+    setCameraError(null)
+    setCameraRequested(true)
+  }
+
   const customAvatarDef = getAvatarDefinition('avatar-custom')
 
   return (
     <div className="custom-character-modal-backdrop" role="presentation">
       <div
+        ref={dialogRef}
         className="custom-character-modal"
         role="dialog"
         aria-modal="true"
@@ -219,8 +308,8 @@ export function CustomCharacterModal({
           <h2 id="custom-modal-title">Extract Face & Fit Astronaut Suit</h2>
           <p>
             {rawPhotoUrl
-              ? 'Align and fit your face inside the spacesuit visor. We remove the background so your face is seamlessly placed into your astronaut helmet!'
-              : 'Take a photo with your camera or upload a picture to extract your face into the spacesuit visor.'}
+              ? 'Align the crop inside the spacesuit visor. Face detection is optional; the manual controls always remain available.'
+              : 'Take a photo or choose one from this device. The image stays in this browser and is not sent to a server.'}
           </p>
         </header>
 
@@ -235,7 +324,7 @@ export function CustomCharacterModal({
                     role="tab"
                     aria-selected={activeTab === 'camera'}
                     className={`custom-tab-btn ${activeTab === 'camera' ? 'custom-tab-btn--active' : ''}`}
-                    onClick={() => setActiveTab('camera')}
+                    onClick={() => selectSource('camera')}
                   >
                     📷 Open Camera
                   </button>
@@ -244,7 +333,7 @@ export function CustomCharacterModal({
                     role="tab"
                     aria-selected={activeTab === 'upload'}
                     className={`custom-tab-btn ${activeTab === 'upload' ? 'custom-tab-btn--active' : ''}`}
-                    onClick={() => setActiveTab('upload')}
+                    onClick={() => selectSource('upload')}
                   >
                     📁 Upload Photo
                   </button>
@@ -252,13 +341,25 @@ export function CustomCharacterModal({
 
                 {activeTab === 'camera' && (
                   <div className="camera-viewport-card">
-                    {cameraError ? (
+                    {!cameraRequested ? (
+                      <div className="camera-consent-box">
+                        <strong>Camera stays off until you start it.</strong>
+                        <p>Your photo is processed on this device and is never uploaded by ASTER BASE.</p>
+                        <button
+                          type="button"
+                          className="primary-button"
+                          onClick={requestCamera}
+                        >
+                          Start Camera
+                        </button>
+                      </div>
+                    ) : cameraError ? (
                       <div className="camera-error-box">
                         <p>{cameraError}</p>
                         <button
                           type="button"
                           className="secondary-button"
-                          onClick={() => setActiveTab('upload')}
+                          onClick={() => selectSource('upload')}
                         >
                           Switch to Photo Upload
                         </button>
@@ -278,14 +379,16 @@ export function CustomCharacterModal({
                         </div>
                       </div>
                     )}
-                    <button
-                      type="button"
-                      className="primary-button snap-btn"
-                      disabled={Boolean(cameraError)}
-                      onClick={handleSnapPhoto}
-                    >
-                      📸 Snap & Extract Face
-                    </button>
+                    {cameraRequested && !cameraError && (
+                      <button
+                        type="button"
+                        className="primary-button snap-btn"
+                        disabled={!stream}
+                        onClick={handleSnapPhoto}
+                      >
+                        📸 Snap & Extract Face
+                      </button>
+                    )}
                   </div>
                 )}
 
@@ -307,8 +410,12 @@ export function CustomCharacterModal({
                       <strong>Choose a photo with your face</strong>
                       <small>JPG, PNG, WebP supported</small>
                     </button>
+                    <small className="custom-character-privacy">
+                      Photos stay on this device. ASTER BASE does not upload, identify, or analyze who you are.
+                    </small>
                   </div>
                 )}
+                {photoError && <p className="custom-character-error" role="alert">{photoError}</p>}
               </>
             ) : (
               /* Face Alignment & Extraction Studio */
@@ -405,7 +512,7 @@ export function CustomCharacterModal({
                 onClose()
               }}
             >
-              Reset to Standard Suit
+              Remove Local Photo
             </button>
           )}
           <button type="button" className="secondary-button" onClick={onClose}>

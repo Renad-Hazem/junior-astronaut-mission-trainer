@@ -11,6 +11,7 @@ import { DecisionPanel } from "../components/ui/DecisionPanel";
 import { AvatarIdentity } from "../components/ui/AvatarIdentity";
 import { TaskPrompt } from "../components/ui/TaskPrompt";
 import { AstroChatbot } from "../components/ui/AstroChatbot";
+import { BRAND } from "../components/ui/brand";
 import { generateContextualHint } from "../science/astroBotService";
 // import MarsScene from './__stubs__/MarsSceneAdapter'
 import MarsScene from "../scene/MarsScene";
@@ -166,6 +167,7 @@ export function GameplayPage() {
             status={event.sceneStatus}
             highlightedHotspot={event.hotspotId}
             onInspect={inspect}
+            inputLocked={isInspectionUnlocked || isChatOpen}
           />
         </div>
 
@@ -178,11 +180,11 @@ export function GameplayPage() {
             <span aria-hidden="true">←</span>
             <span>Mission Library</span>
           </button>
-          <span className="fallback-badge">UI SCENE FALLBACK</span>
+          <span className="fallback-badge">3D MARS LINK</span>
           <div className="gameplay-cadet">
             <AvatarIdentity avatarId={selectedAvatarId} label="Exploring as" />
             <span className="signal">
-              <i /> ASTER BASE ONLINE
+              <i /> {BRAND.siteName} · LOCAL SESSION
             </span>
             <button
               type="button"
@@ -198,10 +200,10 @@ export function GameplayPage() {
                 setChatInitialPrompt(hintQuery);
                 setIsChatOpen(true);
               }}
-              title="Open AstroBot AI Science Guide"
+              title={`Open ${BRAND.assistantName} science guide`}
             >
               <span className="astrobot-btn-icon">🤖</span>
-              <span><strong>AstroBot AI</strong><small>Mission Hint & Data</small></span>
+              <span><strong>{BRAND.assistantName}</strong><small>Source-linked mission guide</small></span>
             </button>
           </div>
         </header>

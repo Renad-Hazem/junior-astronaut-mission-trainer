@@ -2,6 +2,7 @@ import { useState } from "react";
 import { AstroChatbot } from "../components/ui/AstroChatbot";
 import { AvatarIdentity } from "../components/ui/AvatarIdentity";
 import { AvatarPicker } from "../components/ui/AvatarPicker";
+import { BRAND } from "../components/ui/brand";
 import {
   isLevelUnlocked,
   missionLevels,
@@ -25,7 +26,7 @@ export function MissionLibraryPage() {
             ⌁
           </span>
           <span>
-            ASTER BASE<small>MISSION NETWORK</small>
+            {BRAND.siteName}<small>{BRAND.networkLabel}</small>
           </span>
         </div>
         <div className="library-topbar-actions">
@@ -35,8 +36,8 @@ export function MissionLibraryPage() {
             onClick={() => setIsChatOpen(true)}
             title="Ask AstroBot anything about space before your mission"
           >
-            <span>🤖 Space AI Academy</span>
-            <small>Knowledge Desk</small>
+            <span>🤖 {BRAND.assistantName}</span>
+            <small>Source-linked space guide</small>
           </button>
           <AvatarIdentity avatarId={selectedAvatarId} label="Mission cadet" />
         </div>
@@ -166,7 +167,7 @@ export function MissionLibraryPage() {
         isOpen={isChatOpen}
         onClose={() => setIsChatOpen(false)}
         mode="pre-mission"
-        currentMissionContext="Mission Library Space Academy"
+        currentMissionContext={`${BRAND.siteName} Mission Library`}
       />
     </div>
   );

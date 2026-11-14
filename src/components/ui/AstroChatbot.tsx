@@ -5,6 +5,7 @@ import {
   type BotResponse,
   type SpaceBadge,
 } from '../../science/astroBotService'
+import { BRAND } from './brand'
 
 export interface ChatMessage {
   id: string
@@ -56,8 +57,8 @@ export function AstroChatbot({
       sender: 'bot',
       text:
         mode === 'pre-mission'
-          ? '🌟 Welcome to the Space Academy Knowledge Desk, Cadet! Ask me anything about planets, rockets, black holes, the James Webb telescope, or how astronauts live in space. Explore and ask questions to collect all 8 Space Knowledge Badges!'
-          : 'Greetings Cadet! I am AstroBot, your NASA flight science guide. Ask me any space questions or click a mission hint button while you explore Aster Base on Mars!',
+          ? `🌟 Welcome to ${BRAND.assistantName}, Cadet! Ask about planets, rockets, black holes, telescopes, or life in space. Answers use a source-linked knowledge library, with an offline fallback.`
+          : `Greetings Cadet! I am ${BRAND.assistantName}, your source-linked mission science guide. Ask a space question or request a hint while you explore ${BRAND.siteName} on Mars.`,
       timestamp: 'NOW',
     },
   ])
@@ -174,13 +175,13 @@ export function AstroChatbot({
             <div>
               <div className="astro-chatbot-title-row">
                 <h2 id="astro-chat-title">
-                  {mode === 'pre-mission' ? 'Space Academy AI Desk' : 'AstroBot AI Assistant'}
+                  {BRAND.assistantName}
                 </h2>
-                <span className="astro-status-badge">ONLINE · NASA GROUNDED</span>
+                <span className="astro-status-badge">SOURCE-LINKED GUIDE</span>
               </div>
               <small className="astro-chatbot-sub">
                 {mode === 'pre-mission'
-                  ? 'Ask anything about space, rockets, black holes & planets'
+                  ? `Space learning companion for ${BRAND.descriptor}`
                   : `Telemetry Context: ${currentMissionContext}`}
               </small>
             </div>
@@ -400,7 +401,7 @@ export function AstroChatbot({
                     {msg.responseDetails.sources.length > 0 && (
                       <div className="astro-sources-box">
                         <span className="astro-extra-title">
-                          📡 {msg.responseDetails.live ? 'LIVE NASA DATA' : 'OFFICIAL NASA SOURCE'}
+                          📡 {msg.responseDetails.live ? 'CONNECTED SOURCE RESPONSE' : 'CURATED OFFLINE SOURCE'}
                         </span>
                         <div className="astro-sources-list">
                           {msg.responseDetails.sources.map((src, i) => (
@@ -427,7 +428,7 @@ export function AstroChatbot({
           {isThinking && (
             <div className="astro-message-row astro-message-row--bot">
               <div className="astro-message-bubble astro-thinking-bubble">
-                <span className="astro-pulse" /> AstroBot is querying NASA mission files...
+                <span className="astro-pulse" /> {BRAND.assistantName} is searching the source library...
               </div>
             </div>
           )}

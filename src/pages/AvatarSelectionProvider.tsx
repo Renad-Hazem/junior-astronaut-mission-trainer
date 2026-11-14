@@ -43,8 +43,12 @@ function persistPhoto(photo: string | null) {
 }
 
 export function AvatarSelectionProvider({ children }: { children: ReactNode }) {
-  const [selectedAvatarId, setSelectedAvatarId] = useState<AvatarId>(readStoredAvatar)
   const [customPhotoUrl, setCustomPhotoUrl] = useState<string | null>(readStoredPhoto)
+  const [selectedAvatarId, setSelectedAvatarId] = useState<AvatarId>(() => {
+    const storedAvatar = readStoredAvatar()
+    const storedPhoto = readStoredPhoto()
+    return storedAvatar === 'avatar-custom' && !storedPhoto ? defaultAvatarId : storedAvatar
+  })
 
   const value = useMemo(() => ({
     selectedAvatarId,
@@ -59,6 +63,9 @@ export function AvatarSelectionProvider({ children }: { children: ReactNode }) {
       if (dataUrl) {
         setSelectedAvatarId('avatar-custom')
         persistAvatar('avatar-custom')
+      } else if (selectedAvatarId === 'avatar-custom') {
+        setSelectedAvatarId(defaultAvatarId)
+        persistAvatar(defaultAvatarId)
       }
     },
   }), [selectedAvatarId, customPhotoUrl])

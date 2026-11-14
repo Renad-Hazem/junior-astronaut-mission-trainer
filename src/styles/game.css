@@ -227,9 +227,34 @@
 
 @media (max-width: 560px) {
   .avatar-picker { padding: 1rem; border-radius: 20px; }.avatar-picker__header { padding-inline: 1.5rem; }.avatar-picker__header h2 { font-size: 2.15rem; }.avatar-picker__grid { grid-template-columns: 1fr 1fr; gap: .55rem; }.avatar-card { min-height: 272px; padding: .65rem; border-radius: 16px; }.avatar-preview { height: 160px; transform: scale(.68); margin: -1rem auto -1.2rem; }.avatar-card__copy { min-height: 84px; }.avatar-card__copy strong { font-size: 1rem; }.avatar-card__copy small { font-size: .64rem; }.avatar-card__status { padding: .45rem .2rem; font-size: .56rem; }.avatar-picker__note { font-size: .62rem; }.avatar-picker__actions { flex-direction: column-reverse; }.avatar-picker__actions button { width: 100%; min-width: 0; }.library-avatar-control { align-items: stretch; flex-direction: column; }.library-avatar-control .avatar-identity { justify-content: center; }.gameplay-cadet .signal { display: none; }.control-hint { flex-wrap: wrap; gap: .55rem; }.decision-lock__steps { grid-template-columns: 1fr; }
-  .home-hero h1 { font-size: clamp(2.8rem, 16vw, 4rem); }.home-planet { min-height: 300px; }.home-pip { left: 4%; }.journey-strip { grid-template-columns: 1fr; }.journey-step { min-height: 82px; border-right: 0; }.mission-grid { grid-template-columns: 1fr; }.page-intro { padding-top: 3rem; }.mission-card h2 { min-height: auto; }
+  .home-hero h1 { max-width: 100%; font-size: clamp(2.35rem, 14vw, 4rem); }.home-planet { min-height: 300px; }.home-pip { left: 4%; }.journey-strip { grid-template-columns: 1fr; }.journey-step { min-height: 82px; border-right: 0; }.mission-grid { grid-template-columns: 1fr; }.page-intro { padding-top: 3rem; }.mission-card h2 { min-height: auto; }
   .resource-dashboard__list { grid-template-columns: 1fr; }.mars-scene { min-height: 330px; }.scene-hotspot { transform: scale(.7); }.scene-hotspot--habitat { left: 29%; }.scene-hotspot--solar { left: 0; }.scene-hotspot--greenhouse { right: 0; }.inspection-control { align-items: stretch; flex-direction: column; }.inspection-control button { width: 100%; }.alert-card { grid-template-columns: 42px 1fr; }.pip-avatar { width: 42px; height: 42px; }.gameplay-page { padding-bottom: 1rem; }
   .brief-hero { padding-inline: 0; }.completion-badge { align-items: flex-start; }.comparison-table { overflow-x: auto; }.comparison-head, .comparison-row { min-width: 570px; }.report-timeline li { grid-template-columns: 42px 1fr; padding: 1rem .8rem; }.timeline-number { width: 42px; height: 42px; }.report-timeline::before { left: 29px; }.delta-pill { line-height: 1.5; }.strategy-card { grid-template-columns: 1fr; }.brief-actions { flex-direction: column; }.brief-actions button { width: 100%; }
+}
+
+@media (max-width: 600px) {
+  .home-topbar-actions,
+  .library-topbar-actions {
+    min-width: 0;
+    gap: .35rem;
+  }
+
+  .home-ai-pill-btn {
+    flex: 0 1 auto;
+    min-width: 0;
+    padding-inline: .65rem;
+  }
+
+  .home-ai-pill-btn span {
+    overflow: hidden;
+    max-width: 6.5rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .home-ai-pill-btn small {
+    display: none;
+  }
 }
 /* Immersive fullscreen gameplay milestone */
 .gameplay-page {
@@ -447,7 +472,7 @@
 
 .task-prompt__beacon {
   display: grid;
-  place-items: center;
+  place-items: start center;
   width: 44px;
   height: 44px;
   color: var(--yellow-400);
@@ -959,6 +984,16 @@
 }
 
 .custom-character-modal {
+  margin-block: auto;
+}
+
+@media (max-height: 900px), (max-width: 720px) {
+  .custom-character-modal {
+    margin-block: 0;
+  }
+}
+
+.custom-character-modal {
   position: relative;
   overflow: hidden;
   width: min(860px, 100%);
@@ -1052,6 +1087,33 @@
   flex-direction: column;
   align-items: center;
   gap: 1rem;
+}
+
+.camera-consent-box {
+  display: grid;
+  gap: .75rem;
+  place-items: center;
+  padding: 1.25rem;
+  text-align: center;
+}
+
+.camera-consent-box p,
+.custom-character-privacy {
+  color: rgba(245, 248, 255, .72);
+  line-height: 1.5;
+}
+
+.custom-character-privacy {
+  display: block;
+  margin-top: .75rem;
+  text-align: center;
+}
+
+.custom-character-error {
+  margin: .75rem 0 0;
+  color: #ffd1c7;
+  font-size: .82rem;
+  text-align: center;
 }
 
 .camera-live-wrap {
@@ -1265,6 +1327,17 @@
   margin-top: 1.5rem;
   padding-top: 1rem;
   border-top: 1px solid var(--line);
+}
+
+@media (max-width: 540px) {
+  .custom-character-modal__footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .custom-character-modal__footer button {
+    width: 100%;
+  }
 }
 
 .danger-button {
