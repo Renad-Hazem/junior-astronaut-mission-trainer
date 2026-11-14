@@ -20,6 +20,7 @@ const AVATAR_ACCENTS: Record<AvatarId, string> = {
   "avatar-02": "#55bdeb",
   "avatar-03": "#b995ff",
   "avatar-04": "#63e6c1",
+  "avatar-custom": "#f0c868",
 };
 const VISOR = "#f2a33a";
 

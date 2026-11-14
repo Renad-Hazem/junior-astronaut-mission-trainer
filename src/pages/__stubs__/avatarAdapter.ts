@@ -1,7 +1,7 @@
 // TEMPORARY UI-ONLY CONTRACT ADAPTER.
 // TODO(integration): replace these definitions with Malak's approved
 // AvatarId / AvatarDefinition exports when the shared contract lands.
-export type AvatarId = 'avatar-01' | 'avatar-02' | 'avatar-03' | 'avatar-04'
+export type AvatarId = 'avatar-01' | 'avatar-02' | 'avatar-03' | 'avatar-04' | 'avatar-custom'
 
 export interface AvatarDefinition {
   id: AvatarId
@@ -41,6 +41,13 @@ export const avatarDefinitions: readonly AvatarDefinition[] = [
     description: 'A teal trailblazer built for calm thinking and bold ideas.',
     accentColor: '#63e6c1',
     previewClass: 'avatar-preview--comet',
+  },
+  {
+    id: 'avatar-custom',
+    displayName: 'Cadet You',
+    description: 'Personalized astronaut with your camera or photo in the helmet visor!',
+    accentColor: '#f0c868',
+    previewClass: 'avatar-preview--custom',
   },
 ] as const
 

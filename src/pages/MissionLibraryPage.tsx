@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { AstroChatbot } from "../components/ui/AstroChatbot";
 import { AvatarIdentity } from "../components/ui/AvatarIdentity";
 import { AvatarPicker } from "../components/ui/AvatarPicker";
 import {
@@ -15,6 +16,7 @@ export function MissionLibraryPage() {
   const completedLevelIds = useGameStore((state) => state.completedLevelIds);
   const { selectedAvatarId, selectAvatar } = useAvatarSelection();
   const [isChangingAvatar, setIsChangingAvatar] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
   return (
     <div className="library-page page">
       <header className="topbar">
@@ -26,7 +28,18 @@ export function MissionLibraryPage() {
             ASTER BASE<small>MISSION NETWORK</small>
           </span>
         </div>
-        <AvatarIdentity avatarId={selectedAvatarId} label="Mission cadet" />
+        <div className="library-topbar-actions">
+          <button
+            type="button"
+            className="home-ai-pill-btn"
+            onClick={() => setIsChatOpen(true)}
+            title="Ask AstroBot anything about space before your mission"
+          >
+            <span>🤖 Space AI Academy</span>
+            <small>Knowledge Desk</small>
+          </button>
+          <AvatarIdentity avatarId={selectedAvatarId} label="Mission cadet" />
+        </div>
       </header>
       <section className="page-intro">
         <span className="eyebrow">CHOOSE YOUR NEXT CHALLENGE</span>
@@ -43,6 +56,14 @@ export function MissionLibraryPage() {
             onClick={() => setIsChangingAvatar(true)}
           >
             Change Astronaut
+          </button>
+          <button
+            type="button"
+            className="primary-button library-ask-ai-btn"
+            onClick={() => setIsChatOpen(true)}
+          >
+            <span>🤖 Ask AstroBot Anything</span>
+            <small>Collect Space Badges!</small>
           </button>
         </div>
       </section>
@@ -141,6 +162,12 @@ export function MissionLibraryPage() {
           onCancel={() => setIsChangingAvatar(false)}
         />
       )}
+      <AstroChatbot
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+        mode="pre-mission"
+        currentMissionContext="Mission Library Space Academy"
+      />
     </div>
   );
 }
