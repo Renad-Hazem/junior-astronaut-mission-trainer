@@ -82,6 +82,9 @@ export default function SolarGamePreview() {
           onCancel={() => {
             addLog('onCancel() triggered by player');
           }}
+          onReturn={() => {
+            addLog('onReturn() — host would close the activity here');
+          }}
           onSoundEffect={(effect) => {
             addLog(`audio cue: ${effect}`);
           }}

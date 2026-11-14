@@ -76,7 +76,8 @@
 .avatar-preview--orion .avatar-preview__helmet { border-radius: 34% 34% 45% 45%; }.avatar-preview--orion .avatar-preview__body { border-radius: 14px; }.avatar-preview--orion .avatar-preview__backpack { left: 18px; width: 102px; }
 .avatar-preview--lumi .avatar-preview__helmet { width: 88px; border-radius: 50%; }.avatar-preview--lumi .avatar-preview__backpack { left: 29px; width: 80px; border-radius: 28px; }.avatar-preview--lumi .avatar-preview__antenna { right: 17px; height: 36px; }
 .avatar-preview--comet .avatar-preview__helmet { height: 76px; border-radius: 46% 46% 28% 28%; }.avatar-preview--comet .avatar-preview__backpack::after { content: ''; position: absolute; right: -11px; top: 8px; width: 13px; height: 47px; border-radius: 7px; background: var(--avatar-accent); }
-.avatar-preview--compact { width: 44px; height: 51px; margin: 0; transform: scale(.32); transform-origin: center; }
+/* Two classes so the responsive `.avatar-preview` resizes below (820px / 560px) cannot blow the compact header avatar back up. */
+.avatar-preview.avatar-preview--compact { width: 44px; height: 51px; margin: 0; transform: scale(.32); transform-origin: center; }
 .avatar-preview--compact::before { display: none; }
 .avatar-identity { display: inline-flex; align-items: center; gap: .35rem; min-height: 48px; padding: .2rem .7rem .2rem .15rem; border: 1px solid rgba(85, 189, 235, .28); border-radius: 99px; background: rgba(17, 24, 78, .56); }
 .avatar-identity > span { margin-left: -42px; padding-left: 48px; }
@@ -742,9 +743,16 @@
     display: none;
   }
 }
+/* Tablet and phone header: the AstroBot subtitle wrapped onto 3–4 lines and pushed the bar over the HUD. */
+@media (max-width: 820px) {
+  .gameplay-cadet .astrobot-command-btn small {
+    display: none;
+  }
+}
 @media (max-width: 760px) {
   .gameplay-command-bar {
     min-height: 60px;
+    padding-block: 0.4rem;
   }
 
   .gameplay-back-button span:last-child,
@@ -2074,4 +2082,51 @@
     white-space: normal;
     font-size: 0.82rem;
   }
+}
+
+/* ==========================================================================
+   Level 2 · optional remote cleaning-rover practice (Solar Panel Dust Rescue)
+   ========================================================================== */
+.rover-activity-card {
+  display: grid;
+  gap: 0.7rem;
+  margin-top: 0.75rem;
+  padding: 0.85rem 0.95rem;
+  border: 1px dashed rgba(85, 189, 235, 0.45);
+  border-radius: 18px;
+  background: rgba(85, 189, 235, 0.07);
+}
+
+.rover-activity-card h3 {
+  margin: 0.25rem 0 0.3rem;
+  font-size: 0.98rem;
+}
+
+.rover-activity-card p {
+  margin: 0;
+  color: #c5cde5;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.rover-activity-card .rover-activity-card__status {
+  margin-top: 0.45rem;
+  color: #8ee6b5;
+  font-weight: 800;
+}
+
+.rover-activity-card__button {
+  justify-self: start;
+  min-height: 44px;
+}
+
+.rover-console-loading {
+  position: fixed;
+  z-index: 300;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--white);
+  background: rgba(4, 7, 22, 0.84);
+  font-weight: 800;
 }

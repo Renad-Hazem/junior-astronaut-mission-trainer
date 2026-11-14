@@ -10,13 +10,25 @@ export interface SolarPanelCleaningResult {
   durationMs: number;
 }
 
+export type SolarSoundEffect = 'brush' | 'power_up' | 'complete';
+
 export interface SolarPanelCleaningGameProps {
+  /**
+   * Called exactly once per successful cleaning pass, when the threshold is
+   * crossed. A retry ("Clean Again" / "Reset") starts a new pass.
+   */
   onComplete?: (result: SolarPanelCleaningResult) => void;
   onCancel?: () => void;
+  /** Primary action on the result card (e.g. back to the mission decision). Hidden if omitted. */
+  onReturn?: () => void;
+  /** Label for the `onReturn` button. */
+  returnLabel?: string;
+  /** Extra sentence on the result card, e.g. that practice does not change base resources. */
+  resultNote?: string;
   reducedMotion?: boolean;
   difficulty?: Difficulty;
   /** Optional sound effect hook for audio integration */
-  onSoundEffect?: (effect: 'brush' | 'power_up' | 'complete') => void;
+  onSoundEffect?: (effect: SolarSoundEffect) => void;
 }
 
 export interface CellData {

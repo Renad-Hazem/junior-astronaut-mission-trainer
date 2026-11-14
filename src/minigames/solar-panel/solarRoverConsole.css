@@ -1,0 +1,25 @@
+/* Focused modal hosting Solar Panel Dust Rescue inside gameplay. */
+.rover-console-backdrop {
+  position: fixed;
+  z-index: 300;
+  inset: 0;
+  display: grid;
+  place-items: start center;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 16px;
+  background: rgba(4, 7, 22, 0.84);
+  backdrop-filter: blur(8px);
+}
+
+.rover-console {
+  width: min(980px, 100%);
+  /* Centred while it fits; starts at the top and scrolls when it does not. */
+  margin-block: auto;
+}
+
+@media (max-width: 480px) {
+  .rover-console-backdrop {
+    padding: 8px;
+  }
+}

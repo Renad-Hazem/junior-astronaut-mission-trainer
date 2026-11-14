@@ -1,21 +1,23 @@
 import React, {
   useCallback,
   useEffect,
+  useId,
   useMemo,
+  useReducer,
   useRef,
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
+  type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
 } from 'react';
 import {
-  COMPLETION_THRESHOLD,
   DIFFICULTY_CONFIGS,
   NASA_SOLAR_FACT,
+  ROVER_CONSOLE_FRAMING,
   calculateCleanedPercentage,
   calculateSimulatedEfficiency,
-  cleanCell,
-  createInitialCells,
 } from './solarMath';
+import { createRound, isUnreportedCompletion, solarRoundReducer } from './solarGameState';
 import type {
   CellData,
   DustParticle,
@@ -24,50 +26,83 @@ import type {
 import './solarPanelGame.css';
 
 const PARTICLE_COLORS = ['#ff8a4c', '#ea580c', '#f59e0b', '#ffd166', '#a85237'];
+/** Brush feedback is a quiet tick at most this often, however fast the input. */
+const BRUSH_SOUND_INTERVAL_MS = 160;
+
+/** Small remote-controlled cleaning rover drawn on the cell it is brushing. */
+function RoverMarker() {
+  return (
+    <svg className="solar-rover-marker" viewBox="0 0 40 28" aria-hidden="true" focusable="false">
+      <rect x="9" y="1" width="2.5" height="9" rx="1" fill="#cbd5e1" />
+      <circle cx="10.25" cy="2" r="2.2" fill="#38e1ff" />
+      <rect x="4" y="8" width="30" height="11" rx="3" fill="#f8fafc" stroke="#0f172a" strokeWidth="1.2" />
+      <rect x="7" y="10" width="13" height="5" rx="1.2" fill="#1d4ed8" />
+      <rect x="31" y="15" width="8" height="3" rx="1.2" fill="#f59e0b" />
+      <circle cx="10" cy="22" r="4.2" fill="#1e293b" stroke="#94a3b8" strokeWidth="1.2" />
+      <circle cx="28" cy="22" r="4.2" fill="#1e293b" stroke="#94a3b8" strokeWidth="1.2" />
+    </svg>
+  );
+}
 
 export default function SolarPanelCleaningGame({
   onComplete,
   onCancel,
+  onReturn,
+  returnLabel = 'Complete Activity',
+  resultNote,
   reducedMotion = false,
   difficulty = 'normal',
   onSoundEffect,
 }: SolarPanelCleaningGameProps) {
-  const config = useMemo(() => DIFFICULTY_CONFIGS[difficulty], [difficulty]);
-  const [cells, setCells] = useState<CellData[]>(() => createInitialCells(difficulty));
-  const [activeDifficulty, setActiveDifficulty] = useState(difficulty);
+  const config = DIFFICULTY_CONFIGS[difficulty];
+  const [round, dispatch] = useReducer(solarRoundReducer, difficulty, createRound);
   const [particles, setParticles] = useState<DustParticle[]>([]);
-  const [focusedCellId, setFocusedCellId] = useState<string>(() => cells[0]?.id || 'p0-c0');
+  const [focusedCellId, setFocusedCellId] = useState<string>(() => round.cells[0]?.id ?? 'p0-c0');
 
+  const titleId = useId();
+  const resultTitleId = useId();
+  const resultLedeId = useId();
   const isPointerDownRef = useRef(false);
-  const startTimeRef = useRef<number | null>(null);
-  const hasFiredCompletionRef = useRef(false);
   const lastSoundTimeRef = useRef(0);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const reportedRoundRef = useRef<number | null>(null);
+  const surfaceRef = useRef<HTMLDivElement>(null);
+  const resultActionRef = useRef<HTMLButtonElement>(null);
   const particleIdCounterRef = useRef(0);
 
-  // Synchronize cells when difficulty prop changes
-  if (activeDifficulty !== difficulty) {
-    setActiveDifficulty(difficulty);
-    setCells(createInitialCells(difficulty));
+  // A new difficulty starts a new round (render-phase update, guarded by the state itself).
+  if (round.difficulty !== difficulty) {
+    dispatch({ type: 'reset', difficulty });
   }
 
-  useEffect(() => {
-    hasFiredCompletionRef.current = false;
-    startTimeRef.current = null;
-  }, [difficulty]);
-
+  const { cells, completion } = round;
   const cleanedPercentage = useMemo(() => calculateCleanedPercentage(cells), [cells]);
   const simulatedEfficiency = useMemo(
     () => calculateSimulatedEfficiency(cleanedPercentage),
     [cleanedPercentage],
   );
-  const isCompleted = cleanedPercentage >= COMPLETION_THRESHOLD;
+  const isCompleted = completion !== null;
 
-  // Spawn visual dust particle puffs
+  // Report each successful pass exactly once. The reducer records the completion;
+  // this effect only announces it. The ref guard keeps a re-run (Strict Mode, or
+  // new callback identities from the parent) from reporting the same round twice.
+  useEffect(() => {
+    if (!isUnreportedCompletion(completion, reportedRoundRef.current)) return;
+    reportedRoundRef.current = completion.roundId;
+    onSoundEffect?.('complete');
+    onComplete?.({
+      success: completion.success,
+      cleanedPercentage: completion.cleanedPercentage,
+      durationMs: completion.durationMs,
+    });
+    // The array surface is replaced by the result card: keep keyboard focus inside the game.
+    resultActionRef.current?.focus();
+  }, [completion, onComplete, onSoundEffect]);
+
+  // Spawn visual dust particle puffs (coordinates relative to the array surface)
   const spawnDustParticles = useCallback(
     (clientX: number, clientY: number) => {
-      if (reducedMotion || !containerRef.current) return;
-      const rect = containerRef.current.getBoundingClientRect();
+      if (reducedMotion || !surfaceRef.current) return;
+      const rect = surfaceRef.current.getBoundingClientRect();
       const originX = clientX - rect.left;
       const originY = clientY - rect.top;
 
@@ -112,69 +147,57 @@ export default function SolarPanelCleaningGame({
     return () => cancelAnimationFrame(frameId);
   }, [particles, reducedMotion]);
 
-  // Clean a specific cell
-  const handleWipeCell = useCallback(
-    (cellId: string, amount: number, clientX?: number, clientY?: number) => {
-      if (isCompleted) return;
+  /**
+   * Brush one cell. All side effects live here, in the event path; the reducer
+   * stays pure. Effects are skipped for cells that are already clean (as of the
+   * latest render), and the reducer ignores any wipe that changes nothing.
+   */
+  // `at` is the input event's timeStamp, so durations and sound throttling share one clock.
+  const wipeCell = (cellId: string, amount: number, at: number, point?: { x: number; y: number }) => {
+    if (isCompleted) return;
+    const cell = cells.find((c) => c.id === cellId);
+    if (!cell || cell.dust <= 0) return;
 
-      const now = Date.now();
-      if (startTimeRef.current === null) {
-        startTimeRef.current = now;
-      }
+    dispatch({ type: 'wipe', cellId, amount, at });
+    if (point) spawnDustParticles(point.x, point.y);
+    if (at - lastSoundTimeRef.current >= BRUSH_SOUND_INTERVAL_MS) {
+      lastSoundTimeRef.current = at;
+      onSoundEffect?.('brush');
+    }
+  };
 
-      setCells((currentCells) => {
-        const { nextCells, didClean } = cleanCell(currentCells, cellId, amount);
-        if (didClean) {
-          if (clientX !== undefined && clientY !== undefined) {
-            spawnDustParticles(clientX, clientY);
-          }
+  const cellElement = (cellId: string) =>
+    surfaceRef.current?.querySelector<HTMLButtonElement>(`[data-cell-id="${cellId}"]`) ?? null;
 
-          // Throttle brush sound effects to ~100ms
-          if (now - lastSoundTimeRef.current > 100) {
-            lastSoundTimeRef.current = now;
-            onSoundEffect?.('brush');
-          }
+  const cellCenter = (cellId: string) => {
+    const rect = cellElement(cellId)?.getBoundingClientRect();
+    return rect ? { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 } : undefined;
+  };
 
-          const nextCleaned = calculateCleanedPercentage(nextCells);
-          if (nextCleaned >= COMPLETION_THRESHOLD && !hasFiredCompletionRef.current) {
-            hasFiredCompletionRef.current = true;
-            onSoundEffect?.('complete');
-            const startTime = startTimeRef.current ?? now;
-            const durationMs = Math.max(100, now - startTime);
-            onComplete?.({
-              success: true,
-              cleanedPercentage: nextCleaned,
-              durationMs,
-            });
-          }
-        }
-        return nextCells;
-      });
-    },
-    [isCompleted, onComplete, onSoundEffect, spawnDustParticles],
-  );
+  const cellIdAtPoint = (clientX: number, clientY: number) => {
+    const target = document.elementFromPoint(clientX, clientY);
+    return (target?.closest('[data-cell-id]') as HTMLElement | null)?.dataset.cellId;
+  };
 
-  // Pointer interactions (mouse drag / touch swipe)
+  // Pointer interactions (mouse drag / touch swipe): the rover follows the pointer.
   const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (isCompleted) return;
     isPointerDownRef.current = true;
     (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
 
-    const target = document.elementFromPoint(event.clientX, event.clientY);
-    const cellEl = target?.closest('[data-cell-id]') as HTMLElement | null;
-    if (cellEl?.dataset.cellId) {
-      setFocusedCellId(cellEl.dataset.cellId);
-      handleWipeCell(cellEl.dataset.cellId, config.cleanRatePerStroke, event.clientX, event.clientY);
+    const cellId = cellIdAtPoint(event.clientX, event.clientY);
+    if (cellId) {
+      setFocusedCellId(cellId);
+      wipeCell(cellId, config.cleanRatePerStroke, event.timeStamp, { x: event.clientX, y: event.clientY });
     }
   };
 
   const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (!isPointerDownRef.current || isCompleted) return;
-    const target = document.elementFromPoint(event.clientX, event.clientY);
-    const cellEl = target?.closest('[data-cell-id]') as HTMLElement | null;
-    if (cellEl?.dataset.cellId) {
-      setFocusedCellId(cellEl.dataset.cellId);
-      handleWipeCell(cellEl.dataset.cellId, config.cleanRatePerStroke, event.clientX, event.clientY);
+    const cellId = cellIdAtPoint(event.clientX, event.clientY);
+    if (cellId) {
+      setFocusedCellId(cellId);
+      wipeCell(cellId, config.cleanRatePerStroke, event.timeStamp, { x: event.clientX, y: event.clientY });
     }
   };
 
@@ -187,96 +210,76 @@ export default function SolarPanelCleaningGame({
     }
   };
 
-  // Keyboard navigation & cleaning
-  const handleKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
-    if (isCompleted) return;
-
-    const currentIndex = cells.findIndex((c) => c.id === focusedCellId);
-    if (currentIndex === -1) return;
-
-    let nextIndex = currentIndex;
-    const currentCell = cells[currentIndex];
-
-    switch (event.key) {
-      case 'ArrowRight':
-        nextIndex = (currentIndex + 1) % cells.length;
-        event.preventDefault();
-        break;
-      case 'ArrowLeft':
-        nextIndex = (currentIndex - 1 + cells.length) % cells.length;
-        event.preventDefault();
-        break;
-      case 'ArrowDown': {
-        const nextRow = currentCell.row + 1;
-        if (nextRow < config.rowsPerPanel) {
-          const match = cells.find(
-            (c) =>
-              c.panelIndex === currentCell.panelIndex &&
-              c.row === nextRow &&
-              c.col === currentCell.col,
-          );
-          if (match) nextIndex = cells.indexOf(match);
-        } else if (currentCell.panelIndex + 1 < config.panels) {
-          const match = cells.find(
-            (c) =>
-              c.panelIndex === currentCell.panelIndex + 1 &&
-              c.row === 0 &&
-              c.col === currentCell.col,
-          );
-          if (match) nextIndex = cells.indexOf(match);
-        }
-        event.preventDefault();
-        break;
-      }
-      case 'ArrowUp': {
-        const prevRow = currentCell.row - 1;
-        if (prevRow >= 0) {
-          const match = cells.find(
-            (c) =>
-              c.panelIndex === currentCell.panelIndex &&
-              c.row === prevRow &&
-              c.col === currentCell.col,
-          );
-          if (match) nextIndex = cells.indexOf(match);
-        } else if (currentCell.panelIndex - 1 >= 0) {
-          const match = cells.find(
-            (c) =>
-              c.panelIndex === currentCell.panelIndex - 1 &&
-              c.row === config.rowsPerPanel - 1 &&
-              c.col === currentCell.col,
-          );
-          if (match) nextIndex = cells.indexOf(match);
-        }
-        event.preventDefault();
-        break;
-      }
-      case ' ':
-      case 'Enter':
-      case 'c':
-      case 'C': {
-        event.preventDefault();
-        const rect = containerRef.current?.getBoundingClientRect();
-        const clientX = rect ? rect.left + rect.width / 2 : 0;
-        const clientY = rect ? rect.top + rect.height / 2 : 0;
-        handleWipeCell(currentCell.id, config.keyboardCleanRate, clientX, clientY);
-        break;
-      }
-      default:
-        break;
-    }
-
-    if (nextIndex !== currentIndex && cells[nextIndex]) {
-      setFocusedCellId(cells[nextIndex].id);
-    }
+  // Enter / Space reach a cell as a native button click with `detail === 0`
+  // (also how assistive technology activates it). Mouse and touch clicks
+  // (`detail >= 1`) were already handled by pointerdown, so they are ignored here.
+  const handleCellClick = (event: ReactMouseEvent<HTMLButtonElement>, cellId: string) => {
+    if (event.detail !== 0) return;
+    setFocusedCellId(cellId);
+    wipeCell(cellId, config.keyboardCleanRate, event.timeStamp, cellCenter(cellId));
   };
 
-  // Reset / Retry handler
+  const moveFocusTo = (cell: CellData) => {
+    setFocusedCellId(cell.id);
+    cellElement(cell.id)?.focus();
+  };
+
+  // Keyboard steering. Only keys pressed on a solar cell are handled, so the
+  // Reset / Exit and result buttons keep their native Enter / Space behaviour.
+  const handleKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (isCompleted) return;
+    const target = event.target as HTMLElement;
+    const cellId = target.closest<HTMLElement>('[data-cell-id]')?.dataset.cellId;
+    if (!cellId) return;
+
+    const currentIndex = cells.findIndex((c) => c.id === cellId);
+    if (currentIndex === -1) return;
+    const currentCell = cells[currentIndex];
+    const findCell = (panelIndex: number, row: number, col: number) =>
+      cells.find((c) => c.panelIndex === panelIndex && c.row === row && c.col === col);
+
+    let next: CellData | undefined;
+    switch (event.key) {
+      case 'ArrowRight':
+        next = cells[(currentIndex + 1) % cells.length];
+        break;
+      case 'ArrowLeft':
+        next = cells[(currentIndex - 1 + cells.length) % cells.length];
+        break;
+      case 'ArrowDown':
+        next =
+          currentCell.row + 1 < config.rowsPerPanel
+            ? findCell(currentCell.panelIndex, currentCell.row + 1, currentCell.col)
+            : findCell(currentCell.panelIndex + 1, 0, currentCell.col);
+        break;
+      case 'ArrowUp':
+        next =
+          currentCell.row - 1 >= 0
+            ? findCell(currentCell.panelIndex, currentCell.row - 1, currentCell.col)
+            : findCell(currentCell.panelIndex - 1, config.rowsPerPanel - 1, currentCell.col);
+        break;
+      case 'c':
+      case 'C':
+        event.preventDefault();
+        wipeCell(currentCell.id, config.keyboardCleanRate, event.timeStamp, cellCenter(currentCell.id));
+        return;
+      default:
+        return;
+    }
+    event.preventDefault();
+    if (next) moveFocusTo(next);
+  };
+
+  // Reset / Retry: a new round. Nothing is carried over and nothing is awarded.
   const handleReset = () => {
-    setCells(createInitialCells(difficulty));
-    hasFiredCompletionRef.current = false;
-    startTimeRef.current = null;
+    dispatch({ type: 'reset', difficulty });
     setParticles([]);
     onSoundEffect?.('power_up');
+    // "Clean Again" disappears with the result card: put keyboard focus back on the rover.
+    // A click commits synchronously, so the array exists again by the next frame.
+    requestAnimationFrame(() => {
+      surfaceRef.current?.querySelector<HTMLElement>('[data-cell-id][tabindex="0"]')?.focus();
+    });
   };
 
   // Group cells by panel for visual layout
@@ -290,18 +293,19 @@ export default function SolarPanelCleaningGame({
 
   return (
     <div
-      ref={containerRef}
       className={`solar-game-container ${reducedMotion ? 'solar-game--reduced-motion' : ''}`}
       role="region"
-      aria-label="Solar Panel Dust Rescue interactive mini-game"
+      aria-labelledby={titleId}
       onKeyDown={handleKeyDown}
-      tabIndex={0}
     >
       {/* Header */}
       <header className="solar-game-header">
         <div className="solar-game-title-group">
-          <span className="solar-game-badge">☀️ ECLSS Solar Array Maintenance</span>
-          <h2 className="solar-game-title">Solar Panel Dust Rescue</h2>
+          <span className="solar-game-badge">Remote rover console · Power system</span>
+          <h2 id={titleId} className="solar-game-title">Solar Panel Dust Rescue</h2>
+          <p className="solar-game-subtitle">
+            Steer the base&rsquo;s cleaning rover across the dusty solar array from inside the habitat.
+          </p>
         </div>
 
         <div className="solar-game-header-actions">
@@ -309,7 +313,7 @@ export default function SolarPanelCleaningGame({
             type="button"
             className="solar-btn"
             onClick={handleReset}
-            aria-label="Reset mini-game and reapply dust"
+            aria-label="Reset: start a new cleaning pass with fresh dust"
           >
             🔄 Reset
           </button>
@@ -318,7 +322,7 @@ export default function SolarPanelCleaningGame({
               type="button"
               className="solar-btn solar-btn--cancel"
               onClick={onCancel}
-              aria-label="Cancel mini-game and exit"
+              aria-label="Exit the rover console without finishing"
             >
               ✕ Exit
             </button>
@@ -351,127 +355,29 @@ export default function SolarPanelCleaningGame({
         </div>
 
         <div className="solar-efficiency-chip">
-          <span className="solar-efficiency-label">Efficiency</span>
+          <span className="solar-efficiency-label">Simulated output</span>
           <span className="solar-efficiency-metric">{simulatedEfficiency}%</span>
         </div>
       </section>
 
-      {/* Accessible Control Hints */}
-      <div className="solar-instructions-bar">
-        <div className="solar-instruction-pill">
-          <span>👆</span>
-          <span>
-            <strong>Swipe or drag</strong> across panels to wipe dust
-          </span>
-        </div>
-        <div className="solar-instruction-pill">
-          <span>⌨️</span>
-          <span>
-            <span className="solar-keycap">Arrows</span> Navigate ·{' '}
-            <span className="solar-keycap">Space</span> Wipe Cell
-          </span>
-        </div>
-      </div>
-
-      {/* Interactive Surface */}
-      <div
-        className="solar-array-surface"
-        style={
-          {
-            '--panels-count': config.panels,
-          } as React.CSSProperties
-        }
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
-      >
-        {panels.map((panelCells, pIndex) => (
-          <div
-            key={`panel-${pIndex}`}
-            className="solar-panel-module"
-            style={
-              {
-                '--panel-rows': config.rowsPerPanel,
-                '--panel-cols': config.colsPerPanel,
-              } as React.CSSProperties
-            }
-          >
-            {panelCells.map((cell) => {
-              const isCellClean = cell.dust <= 10;
-              const isFocused = cell.id === focusedCellId;
-              return (
-                <button
-                  key={cell.id}
-                  type="button"
-                  data-cell-id={cell.id}
-                  className={`solar-cell ${isCellClean ? 'solar-cell--clean' : ''}`}
-                  onClick={() =>
-                    handleWipeCell(cell.id, config.cleanRatePerStroke)
-                  }
-                  onFocus={() => setFocusedCellId(cell.id)}
-                  tabIndex={isFocused ? 0 : -1}
-                  aria-label={`Panel ${cell.panelIndex + 1}, cell ${cell.cellIndex + 1}: ${100 - cell.dust}% clean`}
-                >
-                  <div className="solar-cell-grid" />
-                  <div className="solar-cell-busbar" />
-                  <div
-                    className="solar-cell-dust-layer"
-                    style={{ opacity: cell.dust / 100 }}
-                  >
-                    <div className="solar-cell-dust-specks" />
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        ))}
-
-        {/* Dynamic Dust Particles */}
-        {!reducedMotion && particles.length > 0 && (
-          <div className="solar-particles-overlay" aria-hidden="true">
-            {particles.map((p) => (
-              <span
-                key={p.id}
-                className="solar-dust-particle"
-                style={{
-                  left: p.x,
-                  top: p.y,
-                  width: p.size,
-                  height: p.size,
-                  backgroundColor: p.color,
-                  opacity: p.opacity,
-                }}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Completion Modal */}
-      {isCompleted && (
-        <div
-          className="solar-modal-backdrop"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="solar-complete-title"
-        >
+      {completion ? (
+        /* Result card replaces the array, so it is never clipped on small screens. */
+        <section className="solar-result" aria-labelledby={resultTitleId}>
           <div className="solar-modal-card">
-            <span className="solar-modal-celebration-badge">
-              ☀️ Mission Success
-            </span>
-            <h3 id="solar-complete-title" className="solar-modal-title">
-              Solar Array Restored!
+            <span className="solar-modal-celebration-badge">Cleaning pass complete</span>
+            <h3 id={resultTitleId} className="solar-modal-title">
+              Panels cleared by the rover
             </h3>
-            <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.9rem' }}>
-              Photovoltaic power generation is back online at Aster Base.
+            <p id={resultLedeId} className="solar-result-lede">
+              The rover brushed away {completion.cleanedPercentage}% of the simulated dust.
+              {resultNote ? ` ${resultNote}` : ''}
             </p>
 
             <div className="solar-modal-metrics-deck">
               <div className="solar-modal-metric-card">
                 <span className="solar-modal-metric-label">Cleaned</span>
                 <div className="solar-modal-metric-number">
-                  {cleanedPercentage}%
+                  {completion.cleanedPercentage}%
                 </div>
               </div>
               <div className="solar-modal-metric-card">
@@ -479,7 +385,7 @@ export default function SolarPanelCleaningGame({
                   Simulated Output
                 </span>
                 <div className="solar-modal-metric-number">
-                  {simulatedEfficiency}%
+                  {calculateSimulatedEfficiency(completion.cleanedPercentage)}%
                 </div>
               </div>
             </div>
@@ -487,32 +393,38 @@ export default function SolarPanelCleaningGame({
             {/* Science Education */}
             <div className="solar-science-card">
               <div className="solar-science-title">
-                <span>🔬</span>
+                <span aria-hidden="true">🔬</span>
                 <span>{NASA_SOLAR_FACT.title}</span>
               </div>
               <p className="solar-science-text">{NASA_SOLAR_FACT.body}</p>
+              <ul className="solar-science-sources">
+                {NASA_SOLAR_FACT.sources.map((source) => (
+                  <li key={source.url}>
+                    <a href={source.url} target="_blank" rel="noreferrer">
+                      {source.label} <span aria-hidden="true">↗</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
               <small className="solar-science-disclaimer">
-                {NASA_SOLAR_FACT.disclaimer}
+                {ROVER_CONSOLE_FRAMING} {NASA_SOLAR_FACT.disclaimer}
               </small>
             </div>
 
             <div className="solar-modal-actions">
+              {onReturn && (
+                <button
+                  ref={resultActionRef}
+                  type="button"
+                  className="solar-btn solar-btn--primary"
+                  aria-describedby={`${resultTitleId} ${resultLedeId}`}
+                  onClick={onReturn}
+                >
+                  {returnLabel}
+                </button>
+              )}
               <button
-                type="button"
-                className="solar-btn solar-btn--primary"
-                onClick={() => {
-                  const now = Date.now();
-                  const startTime = startTimeRef.current ?? now;
-                  onComplete?.({
-                    success: true,
-                    cleanedPercentage,
-                    durationMs: Math.max(100, now - startTime),
-                  });
-                }}
-              >
-                Complete Activity
-              </button>
-              <button
+                ref={onReturn ? undefined : resultActionRef}
                 type="button"
                 className="solar-btn"
                 onClick={handleReset}
@@ -521,7 +433,101 @@ export default function SolarPanelCleaningGame({
               </button>
             </div>
           </div>
-        </div>
+        </section>
+      ) : (
+        <>
+          {/* Accessible Control Hints */}
+          <div className="solar-instructions-bar">
+            <div className="solar-instruction-pill">
+              <span aria-hidden="true">👆</span>
+              <span>
+                <strong>Drag or swipe</strong> to drive the rover&rsquo;s brush over the panels
+              </span>
+            </div>
+            <div className="solar-instruction-pill">
+              <span aria-hidden="true">⌨️</span>
+              <span>
+                <span className="solar-keycap">Arrows</span> Steer ·{' '}
+                <span className="solar-keycap">Space</span> or <span className="solar-keycap">C</span> Brush
+              </span>
+            </div>
+          </div>
+
+          {/* Interactive Surface */}
+          <div
+            ref={surfaceRef}
+            className="solar-array-surface"
+            style={
+              {
+                '--panels-count': config.panels,
+              } as React.CSSProperties
+            }
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
+          >
+            {panels.map((panelCells, pIndex) => (
+              <div
+                key={`panel-${pIndex}`}
+                className="solar-panel-module"
+                style={
+                  {
+                    '--panel-rows': config.rowsPerPanel,
+                    '--panel-cols': config.colsPerPanel,
+                  } as React.CSSProperties
+                }
+              >
+                {panelCells.map((cell) => {
+                  const isCellClean = cell.dust <= 10;
+                  const isFocused = cell.id === focusedCellId;
+                  return (
+                    <button
+                      key={cell.id}
+                      type="button"
+                      data-cell-id={cell.id}
+                      className={`solar-cell ${isCellClean ? 'solar-cell--clean' : ''} ${isFocused ? 'solar-cell--rover' : ''}`}
+                      onClick={(event) => handleCellClick(event, cell.id)}
+                      onFocus={() => setFocusedCellId(cell.id)}
+                      tabIndex={isFocused ? 0 : -1}
+                      aria-label={`Panel ${cell.panelIndex + 1}, cell ${cell.cellIndex + 1}: ${100 - cell.dust}% clean${isFocused ? ', rover is here' : ''}`}
+                    >
+                      <div className="solar-cell-grid" />
+                      <div className="solar-cell-busbar" />
+                      <div
+                        className="solar-cell-dust-layer"
+                        style={{ opacity: cell.dust / 100 }}
+                      >
+                        <div className="solar-cell-dust-specks" />
+                      </div>
+                      {isFocused && <RoverMarker />}
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
+
+            {/* Dynamic Dust Particles */}
+            {!reducedMotion && particles.length > 0 && (
+              <div className="solar-particles-overlay" aria-hidden="true">
+                {particles.map((p) => (
+                  <span
+                    key={p.id}
+                    className="solar-dust-particle"
+                    style={{
+                      left: p.x,
+                      top: p.y,
+                      width: p.size,
+                      height: p.size,
+                      backgroundColor: p.color,
+                      opacity: p.opacity,
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </>
       )}
     </div>
   );

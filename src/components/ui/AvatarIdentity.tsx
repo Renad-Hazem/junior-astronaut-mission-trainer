@@ -14,9 +14,10 @@ export function AvatarIdentity({ avatarId, label = 'Selected astronaut', customP
   const avatar = getAvatarDefinition(avatarId)
 
   return (
-    <div className="avatar-identity" aria-label={`${label}: ${avatar.displayName}`}>
+    // role="group" makes the aria-label count when the visible copy is hidden on narrow gameplay headers.
+    <div className="avatar-identity" role="group" aria-label={`${label}: ${avatar.displayName}`}>
       <AvatarPreview avatar={avatar} compact customPhotoUrl={avatarId === 'avatar-custom' ? customPhotoUrl : undefined} />
-      <span><small>{label}</small><strong>{avatar.displayName}</strong></span>
+      <span className="avatar-identity__copy"><small>{label}</small><strong>{avatar.displayName}</strong></span>
     </div>
   )
 }

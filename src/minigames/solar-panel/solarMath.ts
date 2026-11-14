@@ -107,12 +107,31 @@ export function cleanCell(cells: CellData[], cellId: string, amount: number): { 
 }
 
 /**
- * Verified NASA Science Citation and Educational Grounding.
+ * NASA science shown after a successful cleaning pass.
+ *
+ * Checked 2026-11-14 against:
+ * - NASA's Opportunity mission page: operated almost 15 years, and wind cleaned dust off its solar panels.
+ * - JPL's InSight retirement release (21 Dec 2022): dust on the solar panels slowly reduced power until the
+ *   lander ran out of energy; the team used the arm's scoop to sprinkle dirt on windy days to sweep dust off.
  */
 export const NASA_SOLAR_FACT = {
   title: 'Dust on Martian Solar Arrays',
-  body: "On Mars, atmospheric dust storms and constant electrostatic fallout settle on solar arrays. NASA's Opportunity rover survived over 14 years on Mars thanks to periodic natural wind gusts ('cleaning events') that swept dust off its solar wings. In contrast, the InSight lander's mission concluded in December 2022 after thick dust permanently lowered its solar output below operational limits.",
-  sourceLabel: 'NASA Mars Exploration Program & InSight Mission',
-  sourceUrl: 'https://science.nasa.gov/mission/insight/',
+  body: "On Mars, dust settles out of the air onto solar panels and blocks sunlight. NASA's Opportunity rover kept working for almost 15 years, helped by Martian winds that sometimes swept its solar panels clean. The InSight lander was not so lucky: dust slowly covered its panels until its power ran out, and its mission ended in December 2022. Its team even used the lander's robotic arm to sprinkle dirt on windy days so the falling grains would sweep some dust away.",
+  sourceLabel: 'NASA JPL: InSight mission ends (21 Dec 2022)',
+  sourceUrl: 'https://www.jpl.nasa.gov/news/nasa-retires-insight-mars-lander-mission-after-years-of-science/',
+  sources: [
+    {
+      label: 'NASA JPL: InSight mission ends (21 Dec 2022)',
+      url: 'https://www.jpl.nasa.gov/news/nasa-retires-insight-mars-lander-mission-after-years-of-science/',
+    },
+    { label: 'NASA: Opportunity rover mission', url: 'https://science.nasa.gov/mission/mer-opportunity/' },
+  ],
   disclaimer: 'Educational simulation note: Cleaning percentage and efficiency values in this mini-game are fictional educational indicators for mission gameplay, not actual spacecraft telemetry.',
 };
+
+/**
+ * Story framing for ASTER BASE. The cleaning rover is part of the game's
+ * fictional base, not a real NASA machine.
+ */
+export const ROVER_CONSOLE_FRAMING =
+  'ASTER BASE is a story base: the crew stays safely inside and steers a small cleaning rover by remote control, so nobody has to go out into the dust. The rover is part of the game, not a real NASA machine.';

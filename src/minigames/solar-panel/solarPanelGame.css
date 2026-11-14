@@ -254,6 +254,10 @@
 /* Individual Cell */
 .solar-cell {
   position: relative;
+  /* Fill the grid track; without this, aspect-ratio + min-height made cells wider
+     than their column, so they overlapped and pointer hits landed on the wrong cell. */
+  width: 100%;
+  min-width: 0;
   min-height: 80px;
   aspect-ratio: 1.2;
   background: radial-gradient(circle at 50% 50%, #2563eb 0%, #1d4ed8 40%, #1e3a8a 100%);
@@ -280,7 +284,7 @@
 .solar-cell-grid {
   position: absolute;
   inset: 0;
-  background-image: 
+  background-image:
     linear-gradient(to right, rgba(255, 255, 255, 0.15) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(255, 255, 255, 0.15) 1px, transparent 1px);
   background-size: 20% 25%;
@@ -463,6 +467,70 @@
   to { opacity: 1; transform: scale(1); }
 }
 
+/* Remote rover console framing */
+.solar-game-subtitle {
+  margin: 0;
+  max-width: 46ch;
+  color: #94a3b8;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+/* The cell the rover is brushing */
+.solar-cell--rover {
+  border-color: rgba(56, 225, 255, 0.85);
+}
+
+.solar-rover-marker {
+  position: absolute;
+  z-index: 5;
+  left: 50%;
+  top: 50%;
+  width: min(78%, 46px);
+  height: auto;
+  transform: translate(-50%, -50%);
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.6));
+  pointer-events: none;
+}
+
+/* Result card shown in place of the array (never clipped on small screens) */
+.solar-result {
+  display: grid;
+  place-items: center;
+  padding: 0.25rem 0 0.5rem;
+}
+
+.solar-result .solar-modal-card {
+  animation: solarFadeIn 240ms ease-out;
+}
+
+.solar-result-lede {
+  margin: 0;
+  color: #cbd5e1;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.solar-science-sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.9rem;
+  margin: 0.55rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.74rem;
+}
+
+.solar-science-sources a {
+  color: #7dd3fc;
+  font-weight: 700;
+}
+
+.solar-btn:focus-visible {
+  outline: 3px solid #38e1ff;
+  outline-offset: 2px;
+}
+
 /* Mobile Responsiveness */
 @media (max-width: 640px) {
   .solar-array-surface {
@@ -494,6 +562,7 @@
   .solar-btn,
   .solar-progress-fill,
   .solar-modal-backdrop,
+  .solar-result .solar-modal-card,
   .solar-cell-dust-layer {
     transition: none !important;
     animation: none !important;
@@ -503,6 +572,7 @@
 .solar-game--reduced-motion .solar-btn,
 .solar-game--reduced-motion .solar-progress-fill,
 .solar-game--reduced-motion .solar-modal-backdrop,
+.solar-game--reduced-motion .solar-result .solar-modal-card,
 .solar-game--reduced-motion .solar-cell-dust-layer {
   transition: none !important;
   animation: none !important;

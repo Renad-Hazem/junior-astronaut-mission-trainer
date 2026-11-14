@@ -43,8 +43,9 @@ This folder holds the centralized game audio, built on the Web Audio API with no
 | `astrobot-message` | AstroBot appends an answer (not the "thinking" bubble, not the welcome message) | Observes new `.astro-message-row--bot` nodes (see the caveat below) |
 | `menu-navigate` | Button clicks outside the mission HUD and the AstroBot panel, plus elements marked `data-audio="nav"` | Delegated click listener |
 | `footstep` | The astronaut is actually moving | `MarsScene`'s `onMovementChange` (wired in `GameplayPage.tsx`, see below) |
+| `menu-navigate` / `inspect-system` / `brief-open` (reused) | Level 2 remote cleaning-rover console: brush stroke (max every 160 ms), retry, success (the science card opens, once per pass) | `ROVER_SOUNDS` in `GameplayPage.tsx` via the mini-game's `onSoundEffect`; no new registry IDs |
 
-Opt out of the navigation tick with `data-audio="silent"`; opt in inside the HUD with `data-audio="nav"`.
+Opt out of the navigation tick with `data-audio="silent"`; opt in inside the HUD with `data-audio="nav"`. The rover console is `data-audio="silent"` and locks scene input, so footsteps stop while it is open.
 
 ## Footsteps (`onMovementChange`) — wired
 
@@ -92,7 +93,9 @@ Home, Library and Brief have no sound button: those pages belong to the UI owner
 npm test                                   # includes 34 audio unit tests (fake AudioContext)
 node src/audio/tools/browser-qa.mjs --plan-only   # check hotspot walk plans against the scene's own physics (no browser)
 npm run build && npx vite preview --port 4317 --strictPort
-# DevTools port 9333 is shared with `npm run qa:browser`: run the two one after the other, not at the same time.
+# DevTools port 9333 is shared with `npm run qa:browser`: run the two one after the other, not at the same time,
+# or give each run its own ports: `--port 9496` here; QA_APP_PORT=4196 QA_DEBUG_PORT=9396 for qa:browser
+# (QA_OUT_DIR moves its Chrome profile and screenshots off a full system drive). qa:browser refuses busy ports.
 # --only walkingFootsteps,mobileFlow   runs a subset of scenarios
 node src/audio/tools/browser-qa.mjs --url http://127.0.0.1:4317/ --out ../audio-qa-results
 node src/audio/tools/build-mars-wind-loop.mjs <downloaded NASA 45704_…wav>

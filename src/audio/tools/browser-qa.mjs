@@ -165,6 +165,7 @@ async function click(page, finder, times = 1) {
 const KEYS = {
   w: ['w', 'KeyW', 87, 'w'], a: ['a', 'KeyA', 65, 'a'], s: ['s', 'KeyS', 83, 's'], d: ['d', 'KeyD', 68, 'd'], e: ['e', 'KeyE', 69, 'e'],
   ArrowLeft: ['ArrowLeft', 'ArrowLeft', 37], Escape: ['Escape', 'Escape', 27],
+  c: ['c', 'KeyC', 67, 'c'], ArrowRight: ['ArrowRight', 'ArrowRight', 39],
 };
 const keyDown = (page, name) => {
   const [k, code, vk, text] = KEYS[name];
@@ -797,6 +798,136 @@ async function hotspotsAndRocket(browser, model) {
   await page.close();
 }
 
+// Level 2 · optional remote cleaning-rover activity (Solar Panel Dust Rescue)
+const ROVER_BUTTON = `document.querySelector('.rover-activity-card__button')`;
+const roverResult = `document.querySelector('.rover-console .solar-result')`;
+const resourceHud = (page) => evaluate(page, `document.querySelector('.gameplay-resource-hud')?.textContent ?? ''`);
+const openDecisions = (page) => evaluate(page, `document.querySelectorAll('.decision-option:not(:disabled)').length`);
+
+/** Enters Level 2 from an old v1 save (Level 1 done) and decides its first event. */
+async function enterLevel2AtSolarEvent(page) {
+  await navigate(page, `${BASE}?audioDebug=1`);
+  await evaluate(page, progress(['level-1-first-day']));
+  await page.send('Page.reload');
+  await waitFor(page, `window.__asterAudio`, 15_000);
+  check('Level 2 unlocked from a v1 save and entered', await enterMission(page, 'Power Crisis'));
+  await sleep(600);
+  check('Level 2 event 1 decided', await playEvent(page, 0));
+}
+
+/** Swipes (touch) across every cell, 4 strokes per cell, until the result card shows. */
+async function swipeCells(page) {
+  for (let pass = 0; pass < 6 && !(await evaluate(page, `Boolean(${roverResult})`)); pass += 1) {
+    const cells = await evaluate(page, `[...document.querySelectorAll('.rover-console .solar-cell')].map(c => { const r = c.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width }; })`);
+    const pts = cells.flatMap((c) => [-0.3, -0.1, 0.1, 0.3].map((f) => ({ x: c.x + f * c.w, y: c.y })));
+    await page.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [pts[0]] });
+    for (const p of pts) await page.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [p] });
+    await page.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await sleep(150);
+  }
+}
+
+async function solarRoverConsole(browser, model) {
+  current = 'level-2-rover-console';
+  const page = await openPage(browser);
+  await enterLevel2AtSolarEvent(page);
+
+  // Walk to the solar array with real key holds, then inspect it with E.
+  const solar = model.cfg.HOTSPOTS.find((h) => h.id === 'solar');
+  const plan = solar && planPath(model, (x, z) => model.math.findNearestInteractable({ x, z }, model.cfg.HOTSPOTS) === 'solar' && Math.hypot(x - solar.x, z - solar.z) <= solar.interactRadius - 0.5);
+  const walkStart = await steps(page);
+  if (plan) await walk(page, plan);
+  const reached = await waitFor(page, `${nearbyAttr} === 'solar'`, 2000);
+  check('walked to the solar array with real keys; footsteps on the way', reached && (await steps(page)) > walkStart, { reached, steps: [walkStart, await steps(page)] });
+  await key(page, 'e');
+  check('E at the solar array opens its decision with the optional rover button', await waitFor(page, ROVER_BUTTON));
+
+  const counts = async () => (await audio(page)).stats.playCounts;
+  const hudBefore = await resourceHud(page);
+  await click(page, ROVER_BUTTON);
+  check('"Operate Cleaning Rover" opens the console and focuses the rover cell', await waitFor(page, `document.activeElement?.matches('.rover-console [data-cell-id]')`));
+  await screenshot(page, 'desktop-rover-console');
+
+  // Held movement keys while the console is open: no footsteps, the astronaut stays put.
+  const lockA = await steps(page);
+  await key(page, 'w', { holdMs: 1200 });
+  await key(page, 'd', { holdMs: 600 });
+  const lockB = await steps(page);
+  check('console open: held W/D make no footsteps and do not move the astronaut', lockB === lockA && (await evaluate(page, nearbyAttr)) === 'solar', { lockA, lockB, nearby: await evaluate(page, nearbyAttr) });
+
+  // Keyboard play to completion.
+  const c1 = await counts();
+  let presses = 0;
+  for (let i = 0; i < 60 && !(await evaluate(page, `Boolean(${roverResult})`)); i += 1) {
+    for (let k = 0; k < 4; k += 1) { await key(page, 'c'); presses += 1; }
+    await key(page, 'ArrowRight');
+  }
+  await sleep(400);
+  const c2 = await counts();
+  const d = (a, b, id) => (b[id] ?? 0) - (a[id] ?? 0);
+  check('keyboard play (arrows steer, C brushes) completes the cleaning pass', await evaluate(page, `Boolean(${roverResult})`), { presses });
+  check('success plays the existing "card opens" cue exactly once', d(c1, c2, 'brief-open') === 1, { briefOpen: d(c1, c2, 'brief-open') });
+  check('brush strokes give quiet, rate-limited ticks', d(c1, c2, 'menu-navigate') >= 1 && d(c1, c2, 'menu-navigate') < presses, { ticks: d(c1, c2, 'menu-navigate'), presses });
+  check('no decision cue and all three decisions still open (no automatic decision)', d(c1, c2, 'decision-select') === 0 && (await openDecisions(page)) === 3);
+  check('no footsteps during the activity; resources unchanged', d(c1, c2, 'footstep') === 0 && (await resourceHud(page)) === hudBefore);
+
+  // Retry: a new pass with the existing scan cue; extra keys after success add no completion cue.
+  for (let k = 0; k < 4; k += 1) await key(page, 'c');
+  const c3 = await counts();
+  check('input after success plays no second completion cue', d(c2, c3, 'brief-open') === 0);
+  await click(page, btnByText('Clean Again'));
+  await sleep(250);
+  const c4 = await counts();
+  check('"Clean Again" reapplies the dust and plays the existing scan cue once', d(c3, c4, 'inspect-system') === 1 && (await evaluate(page, `document.querySelector('.rover-console .solar-stat-value')?.textContent`)) === '0%');
+
+  // Escape cancels mid-pass; focus returns; nothing changed.
+  await key(page, 'Escape');
+  await sleep(200);
+  check('Escape closes the console and returns focus to "Operate Cleaning Rover"', (await evaluate(page, `!document.querySelector('.rover-console') && document.activeElement?.classList.contains('rover-activity-card__button')`)) === true);
+  check('cancel changed no resources and left the decisions open', (await resourceHud(page)) === hudBefore && (await openDecisions(page)) === 3);
+
+  // The real decision still works exactly once, then walking makes footsteps again.
+  const c5 = await counts();
+  await click(page, `document.querySelectorAll('.decision-option')[0]`);
+  await waitFor(page, `document.querySelector('.decision-continue:not([disabled])')`);
+  check('the mission decision plays its cue once and changes resources', d(c5, await counts(), 'decision-select') === 1 && (await resourceHud(page)) !== hudBefore);
+  await click(page, `document.querySelector('.decision-continue')`);
+  await sleep(300);
+  const r0 = await steps(page);
+  await key(page, 's', { holdMs: 900 });
+  check('after the console and the decision, walking makes footsteps again', (await steps(page)) > r0, { r0, r1: await steps(page) });
+  await page.close();
+}
+
+async function solarRoverTouch(browser) {
+  current = 'level-2-rover-touch';
+  const page = await openPage(browser, { mobile: true });
+  await enterLevel2AtSolarEvent(page);
+  await click(page, `document.querySelector('.task-prompt__action')`);
+  check('tapping Inspect System shows the optional rover button', await waitFor(page, ROVER_BUTTON));
+  const hudBefore = await resourceHud(page);
+  await click(page, ROVER_BUTTON);
+  check('tap opens the rover console', await waitFor(page, `document.querySelector('.rover-console .solar-cell')`));
+  const fits = await evaluate(page, `document.documentElement.clientWidth >= Math.max(...[...document.querySelectorAll('.rover-console .solar-cell')].map(c => c.getBoundingClientRect().right))`);
+  check('console fits the 390 px screen (no cell off-screen)', fits);
+  await screenshot(page, 'mobile-rover-console');
+  const c1 = (await audio(page)).stats.playCounts;
+  await swipeCells(page);
+  await sleep(400);
+  const c2 = (await audio(page)).stats.playCounts;
+  check('finger swipes finish the cleaning pass', await evaluate(page, `Boolean(${roverResult})`));
+  const touchStats = (await audio(page)).stats;
+  const touchCue = (c2['brief-open'] ?? 0) - (c1['brief-open'] ?? 0);
+  const touchOpen = await openDecisions(page);
+  const touchHudSame = (await resourceHud(page)) === hudBefore;
+  check('touch success: one completion cue, no decision, resources unchanged', touchCue === 1 && touchOpen === 3 && touchHudSame, { touchCue, touchOpen, touchHudSame, suppressed: touchStats.suppressedCounts });
+  await screenshot(page, 'mobile-rover-result');
+  await click(page, btnByText('Back to mission decisions'));
+  await sleep(250);
+  check('"Back to mission decisions" returns to the three decisions', (await evaluate(page, `!document.querySelector('.rover-console')`)) && (await openDecisions(page)) === 3);
+  await page.close();
+}
+
 /** Replays a plan through the scene's own physics at 60 fps (as PlayerRig does) and returns where it ends. */
 function simulatePlan(model, plan) {
   const { cfg, math } = model;
@@ -849,8 +980,8 @@ try {
   });
   const all = {
     desktopFlow, warningScenario, stabilizationAndAstroBot, walkingFootsteps, level3AndAvatar,
-    ...(model ? { hotspotsAndRocket: (b) => hotspotsAndRocket(b, model) } : {}),
-    missingAsset: (b) => assetFailure(b, 404), unsupportedFormat: (b) => assetFailure(b, 'format'), noWebAudio, mobileFlow,
+    ...(model ? { hotspotsAndRocket: (b) => hotspotsAndRocket(b, model), solarRoverConsole: (b) => solarRoverConsole(b, model) } : {}),
+    missingAsset: (b) => assetFailure(b, 404), unsupportedFormat: (b) => assetFailure(b, 'format'), noWebAudio, mobileFlow, solarRoverTouch,
   };
   // --only name1,name2 runs a subset (for debugging); default: everything.
   const wanted = args.only ? new Set(String(args.only).split(',')) : null;

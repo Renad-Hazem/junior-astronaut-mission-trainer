@@ -1,6 +1,7 @@
 import {
   lazy,
   Suspense,
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -15,7 +16,12 @@ import { TaskPrompt } from "../components/ui/TaskPrompt";
 import { AstroChatbot } from "../components/ui/AstroChatbot";
 import { AudioSettings } from "../components/ui/AudioSettings";
 import { BRAND } from "../components/ui/brand";
-import { installGlobalAudio, playSound, useGameplayAudio } from "../audio";
+import {
+  installGlobalAudio,
+  playSound,
+  useGameplayAudio,
+  type SfxId,
+} from "../audio";
 import { generateContextualHint } from "../science/astroBotService";
 // import MarsScene from './__stubs__/MarsSceneAdapter'
 import MarsScene from "../scene/MarsScene";
@@ -26,6 +32,8 @@ import {
   type HotspotId,
 } from "../game/uiAdapter";
 import { BONUS_MISSION_05, BONUS_MISSION_05_ID } from "../data/nasa/bonusMission05";
+import type { RoverConsoleCloseReason } from "../minigames/solar-panel/SolarRoverConsole";
+import type { SolarSoundEffect } from "../minigames/solar-panel/types";
 import { useAvatarSelection } from "./useAvatarSelection";
 
 const gameplayKeys = new Set([
@@ -46,6 +54,33 @@ const BonusEvidenceCards = lazy(() =>
   })),
 );
 
+// Optional Level 2 activity: remotely operate the base's solar-panel cleaning
+// rover (Solar Panel Dust Rescue). Practice only: it never changes resources and
+// never chooses a decision. The event's three decisions stay authoritative.
+const SOLAR_ROVER_EVENT_ID = "l2-e2-solar-cleanup";
+const SolarRoverConsole = lazy(
+  () => import("../minigames/solar-panel/SolarRoverConsole"),
+);
+/**
+ * Existing registry sounds only: a quiet tick per brush stroke, a scan on retry,
+ * and the soft "card opens" swipe when the science card appears on success.
+ * (Not "game-startup": it shares a cooldown with the audio-unlock chime and means "game starting".)
+ */
+const ROVER_SOUNDS: Record<SolarSoundEffect, SfxId> = {
+  brush: "menu-navigate",
+  power_up: "inspect-system",
+  complete: "brief-open",
+};
+
+interface RoverActivity {
+  /** Objective (`level:event`) this state belongs to; any other objective ignores it. */
+  key: string;
+  open: boolean;
+  /** Successful cleaning passes. Display only: never converted into resources. */
+  passes: number;
+  lastClose: RoverConsoleCloseReason | null;
+}
+
 // App imports this page statically, so this runs at app start. It attaches the
 // passive gesture/visibility/menu-click listeners once (idempotent). Nothing plays
 // until the first user gesture. Move this to App.tsx if its owner prefers.
@@ -61,9 +96,12 @@ export function GameplayPage() {
     message: string;
     unlocked: boolean;
   } | null>(null);
+  const [roverActivity, setRoverActivity] = useState<RoverActivity | null>(null);
   const inspectButtonRef = useRef<HTMLButtonElement>(null);
   const contextPanelRef = useRef<HTMLElement>(null);
+  const roverButtonRef = useRef<HTMLButtonElement>(null);
   const wasContextOpen = useRef(false);
+  const wasRoverOpen = useRef(false);
   const level = [...missionLevels, bonusMission].find(
     (item) => item.id === store.activeLevelId,
   );
@@ -79,21 +117,49 @@ export function GameplayPage() {
     inspectionResult?.key === objectiveKey
       ? inspectionResult.message
       : `Move toward the highlighted ${targetName} system, then press E. The accessible Inspect System control follows the same UI path.`;
+  // Rover state only applies to the objective it was opened for (replays start fresh).
+  const rover = roverActivity?.key === objectiveKey ? roverActivity : null;
+  const isRoverOpen = Boolean(rover?.open);
+  // Movement, touch d-pad, E-inspect and footsteps all stop while any panel is open.
+  const sceneInputLocked = isInspectionUnlocked || isChatOpen || isRoverOpen;
 
   useEffect(() => {
     if (isInspectionUnlocked) {
-      contextPanelRef.current
-        ?.querySelector<HTMLButtonElement>("button:not(:disabled)")
-        ?.focus();
+      const panel = contextPanelRef.current;
+      // The first decision option keeps the initial focus (as before); the optional
+      // rover button above it is one Shift+Tab away.
+      (
+        panel?.querySelector<HTMLButtonElement>(".decision-option:not(:disabled)") ??
+        panel?.querySelector<HTMLButtonElement>("button:not(:disabled)")
+      )?.focus();
     } else if (wasContextOpen.current) {
       inspectButtonRef.current?.focus();
     }
     wasContextOpen.current = isInspectionUnlocked;
   }, [isInspectionUnlocked, objectiveKey]);
 
+  // Leaving the rover console returns focus to the button that opened it.
+  useEffect(() => {
+    if (wasRoverOpen.current && !isRoverOpen) {
+      (
+        roverButtonRef.current ??
+        contextPanelRef.current?.querySelector<HTMLButtonElement>(".decision-option:not(:disabled)")
+      )?.focus();
+    }
+    wasRoverOpen.current = isRoverOpen;
+  }, [isRoverOpen]);
+
   useEffect(() => {
     if (!isInspectionUnlocked) return;
     const blockGameplayInput = (keyboardEvent: KeyboardEvent) => {
+      // The rover console needs arrows and Space for its own controls. The scene
+      // is input-locked while it is open, so these keys cannot move the astronaut.
+      if (
+        keyboardEvent.target instanceof Element &&
+        keyboardEvent.target.closest("[data-rover-console]")
+      ) {
+        return;
+      }
       if (gameplayKeys.has(keyboardEvent.key.toLowerCase())) {
         keyboardEvent.preventDefault();
         keyboardEvent.stopImmediatePropagation();
@@ -107,8 +173,23 @@ export function GameplayPage() {
   // Sound only observes the game; it never changes resources or decisions.
   const { observeRoot: observeAudioRoot, onMovementChange } = useGameplayAudio({
     sceneStatus: event?.sceneStatus ?? "normal",
-    inputLocked: isInspectionUnlocked || isChatOpen,
+    inputLocked: sceneInputLocked,
   });
+
+  // The console reports each successful pass once. Counting it is display-only.
+  const recordRoverPass = useCallback(() => {
+    setRoverActivity((current) =>
+      current ? { ...current, passes: current.passes + 1 } : current,
+    );
+  }, []);
+  const playRoverSound = useCallback((effect: SolarSoundEffect) => {
+    playSound(ROVER_SOUNDS[effect]);
+  }, []);
+  const closeRoverConsole = useCallback((reason: RoverConsoleCloseReason) => {
+    setRoverActivity((current) =>
+      current ? { ...current, open: false, lastClose: reason } : current,
+    );
+  }, []);
 
   if (!level || !event) {
     return (
@@ -176,10 +257,22 @@ export function GameplayPage() {
     }
   };
 
+  const isRoverEvent = event.id === SOLAR_ROVER_EVENT_ID;
+  const openRoverConsole = () => {
+    setRoverActivity((current) => ({
+      key: objectiveKey,
+      open: true,
+      passes: current?.key === objectiveKey ? current.passes : 0,
+      lastClose: current?.key === objectiveKey ? current.lastClose : null,
+    }));
+  };
+
   return (
     <div
       ref={observeAudioRoot}
       className={`gameplay-page ${isInspectionUnlocked ? "gameplay-page--context-open" : ""}`}
+      // While the rover console (portalled to <body>) is open, the rest of the page is inert.
+      inert={isRoverOpen ? true : undefined}
     >
       <section className="gameplay-stage" aria-label="Mars mission gameplay">
         <div
@@ -194,7 +287,7 @@ export function GameplayPage() {
             status={event.sceneStatus}
             highlightedHotspot={event.hotspotId}
             onInspect={inspect}
-            inputLocked={isInspectionUnlocked || isChatOpen}
+            inputLocked={sceneInputLocked}
             // Footsteps follow the scene's real-displacement signal (see src/scene/sceneCallbacks.ts).
             onMovementChange={onMovementChange}
           />
@@ -331,6 +424,47 @@ export function GameplayPage() {
                 </span>
               </div>
               <AlertCard event={event} />
+              {isRoverEvent && !store.isAwaitingContinue && (
+                <section
+                  className="rover-activity-card"
+                  aria-labelledby="rover-activity-title"
+                  data-rover-passes={rover?.passes ?? 0}
+                >
+                  <div className="rover-activity-card__copy">
+                    <span className="section-kicker">
+                      OPTIONAL · REMOTE ROVER PRACTICE
+                    </span>
+                    <h3 id="rover-activity-title">
+                      Steer the cleaning rover from inside the habitat
+                    </h3>
+                    <p>
+                      Drive the base&rsquo;s small cleaning rover by remote control
+                      and brush dust off the solar array. It is practice only: it
+                      never changes a resource or picks a decision for you. Skip it
+                      any time and choose below.
+                    </p>
+                    {rover && rover.passes > 0 ? (
+                      <p className="rover-activity-card__status" role="status">
+                        ✓ Cleaning pass complete. Practice only: your decision
+                        below still sets the Energy result.
+                      </p>
+                    ) : rover?.lastClose === "cancelled" ? (
+                      <p className="rover-activity-card__status" role="status">
+                        Rover console closed. Nothing changed.
+                      </p>
+                    ) : null}
+                  </div>
+                  <button
+                    ref={roverButtonRef}
+                    type="button"
+                    className="secondary-button rover-activity-card__button"
+                    data-audio="nav"
+                    onClick={openRoverConsole}
+                  >
+                    Operate Cleaning Rover
+                  </button>
+                </section>
+              )}
               <DecisionPanel
                 event={event}
                 lastDecision={store.lastDecision}
@@ -378,6 +512,24 @@ export function GameplayPage() {
         initialPrompt={chatInitialPrompt}
         onClearInitialPrompt={() => setChatInitialPrompt(null)}
       />
+
+      {isRoverOpen && (
+        <Suspense
+          fallback={
+            <div className="rover-console-loading" role="status">
+              Connecting to the cleaning rover…
+            </div>
+          }
+        >
+          <SolarRoverConsole
+            onComplete={recordRoverPass}
+            onClose={closeRoverConsole}
+            onSoundEffect={playRoverSound}
+            returnLabel="Back to mission decisions"
+            resultNote="This practice does not change base resources: your mission decision still decides the Energy result."
+          />
+        </Suspense>
+      )}
     </div>
   );
 }
