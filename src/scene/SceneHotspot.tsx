@@ -1,7 +1,6 @@
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useFrame, type ThreeEvent } from '@react-three/fiber';
-import { Html } from '@react-three/drei';
-import type { Group, Mesh, MeshBasicMaterial } from 'three';
+import { CanvasTexture, SRGBColorSpace, type Group, type Mesh, type MeshBasicMaterial } from 'three';
 import type { HotspotId } from '../game/types';
 import { HIGHLIGHT_COLORS, type HotspotLayout } from './sceneConfig';
 
@@ -19,17 +18,36 @@ interface SceneHotspotProps {
   children: ReactNode;
 }
 
-const labelStyle: CSSProperties = {
-  pointerEvents: 'none',
-  whiteSpace: 'nowrap',
-  padding: '3px 10px',
-  borderRadius: 999,
-  font: '600 13px/1.3 system-ui, sans-serif',
-  color: '#1d1f2b',
-  background: 'rgba(255, 255, 255, 0.92)',
-  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.25)',
-  userSelect: 'none',
-};
+function HotspotLabel({ label }: { label: string }) {
+  const texture = useMemo(() => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 96;
+    const context = canvas.getContext('2d');
+    if (context) {
+      context.fillStyle = 'rgba(255, 255, 255, 0.92)';
+      context.beginPath();
+      context.roundRect(8, 8, 496, 80, 40);
+      context.fill();
+      context.fillStyle = '#1d1f2b';
+      context.font = '600 34px system-ui, sans-serif';
+      context.textAlign = 'center';
+      context.textBaseline = 'middle';
+      context.fillText(label, 256, 49, 460);
+    }
+    const nextTexture = new CanvasTexture(canvas);
+    nextTexture.colorSpace = SRGBColorSpace;
+    return nextTexture;
+  }, [label]);
+
+  useEffect(() => () => texture.dispose(), [texture]);
+
+  return (
+    <sprite scale={[3.2, 0.6, 1]}>
+      <spriteMaterial map={texture} transparent depthTest={false} />
+    </sprite>
+  );
+}
 
 /**
  * Places one mission-system model and adds its interaction affordances:
@@ -137,9 +155,9 @@ export default function SceneHotspot({
       </mesh>
 
       {showLabel && (
-        <Html position={[0, layout.labelHeight, 0]} center zIndexRange={[20, 0]} style={{ pointerEvents: 'none' }}>
-          <div style={labelStyle}>{layout.label}</div>
-        </Html>
+        <group position={[0, layout.labelHeight, 0]} renderOrder={20}>
+          <HotspotLabel label={layout.label} />
+        </group>
       )}
     </group>
   );
