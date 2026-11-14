@@ -29,6 +29,7 @@ export interface MarsSceneProps {
   levelId: LevelId;
   status: SceneStatus;
   avatarId: AvatarId;
+  customPhotoUrl?: string | null;
   highlightedHotspot?: HotspotId;
   onInspect?: (hotspotId: HotspotId) => void;
   reducedMotion?: boolean;
@@ -91,7 +92,7 @@ export default function MarsScene({
   levelId,
   status,
   avatarId,
-
+  customPhotoUrl,
   highlightedHotspot,
   onInspect,
   reducedMotion = false,
@@ -187,6 +188,7 @@ export default function MarsScene({
             levelId={levelId}
             reducedMotion={reducedMotion}
             avatarId={avatarId}
+            customPhotoUrl={customPhotoUrl}
             inputs={inputs}
             onNearbyChange={handleNearbyChange}
           />

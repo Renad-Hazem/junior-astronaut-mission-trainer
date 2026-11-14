@@ -3,6 +3,7 @@ import { AvatarSelectionContext } from './avatarSelectionContext'
 import { defaultAvatarId, isAvatarId, type AvatarId } from './__stubs__/avatarAdapter'
 
 const STORAGE_KEY = 'mars-base:selected-avatar:v1'
+const PHOTO_STORAGE_KEY = 'mars-base:custom-avatar-photo:v1'
 
 function readStoredAvatar(): AvatarId {
   try {
@@ -21,8 +22,29 @@ function persistAvatar(id: AvatarId) {
   }
 }
 
+function readStoredPhoto(): string | null {
+  try {
+    return window.localStorage.getItem(PHOTO_STORAGE_KEY)
+  } catch {
+    return null
+  }
+}
+
+function persistPhoto(photo: string | null) {
+  try {
+    if (photo) {
+      window.localStorage.setItem(PHOTO_STORAGE_KEY, photo)
+    } else {
+      window.localStorage.removeItem(PHOTO_STORAGE_KEY)
+    }
+  } catch {
+    // Storage blocked
+  }
+}
+
 export function AvatarSelectionProvider({ children }: { children: ReactNode }) {
   const [selectedAvatarId, setSelectedAvatarId] = useState<AvatarId>(readStoredAvatar)
+  const [customPhotoUrl, setCustomPhotoUrl] = useState<string | null>(readStoredPhoto)
 
   const value = useMemo(() => ({
     selectedAvatarId,
@@ -30,7 +52,16 @@ export function AvatarSelectionProvider({ children }: { children: ReactNode }) {
       setSelectedAvatarId(id)
       persistAvatar(id)
     },
-  }), [selectedAvatarId])
+    customPhotoUrl,
+    setCustomPhoto: (dataUrl: string | null) => {
+      setCustomPhotoUrl(dataUrl)
+      persistPhoto(dataUrl)
+      if (dataUrl) {
+        setSelectedAvatarId('avatar-custom')
+        persistAvatar('avatar-custom')
+      }
+    },
+  }), [selectedAvatarId, customPhotoUrl])
 
   return <AvatarSelectionContext value={value}>{children}</AvatarSelectionContext>
 }

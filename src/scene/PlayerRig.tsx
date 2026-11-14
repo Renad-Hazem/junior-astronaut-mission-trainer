@@ -34,6 +34,7 @@ interface PlayerRigProps {
   levelId: LevelId;
   reducedMotion: boolean;
   avatarId: AvatarId;
+  customPhotoUrl?: string | null;
   /** Input sources (keyboard, touch); a direction is active if any source holds it. */
   inputs: readonly RefObject<InputState>[];
   onNearbyChange: (id: HotspotId | null) => void;
@@ -47,6 +48,7 @@ export default function PlayerRig({
   levelId,
   reducedMotion,
   avatarId,
+  customPhotoUrl,
   inputs,
   onNearbyChange,
 }: PlayerRigProps) {
@@ -149,6 +151,7 @@ export default function PlayerRig({
         motionRef={motionRef}
         reducedMotion={reducedMotion}
         avatarId={avatarId}
+        customPhotoUrl={customPhotoUrl}
       />{" "}
     </group>
   );

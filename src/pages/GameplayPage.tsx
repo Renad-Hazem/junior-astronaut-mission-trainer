@@ -10,6 +10,8 @@ import { AlertCard } from "../components/ui/AlertCard";
 import { DecisionPanel } from "../components/ui/DecisionPanel";
 import { AvatarIdentity } from "../components/ui/AvatarIdentity";
 import { TaskPrompt } from "../components/ui/TaskPrompt";
+import { AstroChatbot } from "../components/ui/AstroChatbot";
+import { generateContextualHint } from "../science/astroBotService";
 // import MarsScene from './__stubs__/MarsSceneAdapter'
 import MarsScene from "../scene/MarsScene";
 import {
@@ -33,7 +35,9 @@ const gameplayKeys = new Set([
 
 export function GameplayPage() {
   const store = useGameStore((state) => state);
-  const { selectedAvatarId } = useAvatarSelection();
+  const { selectedAvatarId, customPhotoUrl } = useAvatarSelection();
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatInitialPrompt, setChatInitialPrompt] = useState<string | null>(null);
   const [inspectionResult, setInspectionResult] = useState<{
     key: string;
     message: string;
@@ -157,6 +161,7 @@ export function GameplayPage() {
         >
           <MarsScene
             avatarId={selectedAvatarId}
+            customPhotoUrl={customPhotoUrl}
             levelId={level.id}
             status={event.sceneStatus}
             highlightedHotspot={event.hotspotId}
@@ -179,6 +184,25 @@ export function GameplayPage() {
             <span className="signal">
               <i /> ASTER BASE ONLINE
             </span>
+            <button
+              type="button"
+              className="astrobot-command-btn"
+              onClick={() => {
+                const hintQuery = generateContextualHint(
+                  level.title,
+                  event.headline,
+                  event.prompt,
+                  targetName,
+                  store.resources
+                );
+                setChatInitialPrompt(hintQuery);
+                setIsChatOpen(true);
+              }}
+              title="Open AstroBot AI Science Guide"
+            >
+              <span className="astrobot-btn-icon">🤖</span>
+              <span><strong>AstroBot AI</strong><small>Mission Hint & Data</small></span>
+            </button>
           </div>
         </header>
 
@@ -227,6 +251,23 @@ export function GameplayPage() {
             <strong>{event.headline}</strong>
             {event.prompt}
           </p>
+          <button
+            type="button"
+            className="pip-ask-astrobot-btn"
+            onClick={() => {
+              const hintQuery = generateContextualHint(
+                level.title,
+                event.headline,
+                event.prompt,
+                targetName,
+                store.resources
+              );
+              setChatInitialPrompt(hintQuery);
+              setIsChatOpen(true);
+            }}
+          >
+            💡 Ask AstroBot for Hint
+          </button>
         </div>
 
         {isInspectionUnlocked && (
@@ -258,6 +299,19 @@ export function GameplayPage() {
                 }}
                 onContinue={store.continueMission}
               />
+              <div className="contextual-hint-row">
+                <button
+                  type="button"
+                  className="secondary-button ask-astrobot-context-btn"
+                  onClick={() => {
+                    const hintQuery = `We are responding to the ${targetName} crisis in "${level.title} - ${event.headline}". What are the critical science factors to consider for the crew?`;
+                    setChatInitialPrompt(hintQuery);
+                    setIsChatOpen(true);
+                  }}
+                >
+                  🤖 Consult AstroBot before deciding
+                </button>
+              </div>
               <p className="task-contract-note">
                 Scan, carry, install and repair presentation will connect here
                 after Malak and Renad approve the shared runtime contract. This
@@ -267,6 +321,14 @@ export function GameplayPage() {
           </div>
         )}
       </section>
+
+      <AstroChatbot
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+        currentMissionContext={`${level.title} · Sol ${store.eventIndex + 1} · ${targetName} System`}
+        initialPrompt={chatInitialPrompt}
+        onClearInitialPrompt={() => setChatInitialPrompt(null)}
+      />
     </div>
   );
 }

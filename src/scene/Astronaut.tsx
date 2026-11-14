@@ -1,6 +1,6 @@
-import { useRef, type RefObject } from "react";
+import { useMemo, useRef, type RefObject } from "react";
 import { useFrame } from "@react-three/fiber";
-import type { Group } from "three";
+import { Texture, type Group } from "three";
 import { dampFactor } from "./sceneMath";
 import type { AvatarId } from "../pages/__stubs__/avatarAdapter";
 export interface AstronautMotion {
@@ -11,6 +11,7 @@ interface AstronautProps {
   motionRef: RefObject<AstronautMotion>;
   reducedMotion: boolean;
   avatarId: AvatarId;
+  customPhotoUrl?: string | null;
 }
 
 const SUIT = "#f3f1ec";
@@ -32,8 +33,22 @@ export default function Astronaut({
   motionRef,
   reducedMotion,
   avatarId,
+  customPhotoUrl,
 }: AstronautProps) {
-  const ACCENT = AVATAR_ACCENTS[avatarId];
+  const ACCENT = AVATAR_ACCENTS[avatarId] || "#ff913d";
+
+  const photoTexture = useMemo(() => {
+    if (!customPhotoUrl) return null;
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = customPhotoUrl;
+    const tex = new Texture(img);
+    img.onload = () => {
+      tex.needsUpdate = true;
+    };
+    return tex;
+  }, [customPhotoUrl]);
+
   const bodyRef = useRef<Group>(null);
   const leftLegRef = useRef<Group>(null);
   const rightLegRef = useRef<Group>(null);
@@ -136,6 +151,12 @@ export default function Astronaut({
             emissiveIntensity={0.15}
           />
         </mesh>
+        {photoTexture && avatarId === "avatar-custom" && (
+          <mesh position={[0, 1.56, 0.23]}>
+            <circleGeometry args={[0.15, 24]} />
+            <meshBasicMaterial map={photoTexture} toneMapped={false} />
+          </mesh>
+        )}
       </group>
     </group>
   );
